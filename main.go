@@ -9,17 +9,30 @@ import (
 	"net/http"
 	"strconv"
 
-	//cacheservice "jobcrawlerApi/services"
+	"users/gauravagarwal/CRAWLER.API/repository/config"
+	"users/gauravagarwal/CRAWLER.API/repository/connection"
 
 	"github.com/gorilla/mux"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
+var conn connection.IConnection
+var env *config.Config
+
 type Message struct {
 	To      string `json:"+919950458542"`
 	From    string `json:"test"`
 	Message string `json:"message"`
+}
+
+func setupDB() {
+	env = config.GetConfig()
+	conn = connection.InitConnection(env.GetDatabaseConnectionString(), 10)
+	err := conn.ValidateConnection()
+	if err != nil {
+		log.Fatalf("error in conncting to mongo %+v", err)
+	}
 }
 
 func main() {
@@ -80,6 +93,26 @@ func main() {
 		}
 
 		json.NewEncoder(w).Encode("Message sent successfully")
+	}).Methods("POST")
+
+	r.HandleFunc("/login", func(w http.ResponseWriter, p *http.Request) {
+		fmt.Println("Process for login initiated")
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		//get request param
+		body, err := ioutil.ReadAll(p.Body)
+		if err != nil {
+			http.Error(w, "Error reading request body", http.StatusBadRequest)
+			return
+		}
+		defer p.Body.Close()
+		otp := string(body)
+		fmt.Printf("OTP received: " + otp)
+
+		//validate OTP
+		fmt.Fprint(w, true)
 	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
