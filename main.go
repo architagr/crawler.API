@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"users/gauravagarwal/CRAWLER.API/repository/config"
-	"users/gauravagarwal/CRAWLER.API/repository/connection"
+	"jobcrawler.api/config"
+	"jobcrawler.api/repository/connection"
+	"jobcrawler.api/service"
 
 	"github.com/gorilla/mux"
 	"github.com/twilio/twilio-go"
@@ -27,15 +28,21 @@ type Message struct {
 }
 
 func setupDB() {
-	env = config.GetConfig()
-	conn = connection.InitConnection(env.GetDatabaseConnectionString(), 10)
-	err := conn.ValidateConnection()
+	var err error
+	conn, err = connection.InitConnection(env.GetDatabaseConnectionString(), 10)
+	if err != nil {
+		log.Fatalf("error in conncting to mongo %+v", err)
+	}
+	err = conn.ValidateConnection()
 	if err != nil {
 		log.Fatalf("error in conncting to mongo %+v", err)
 	}
 }
 
 func main() {
+	env = config.GetConfig()
+	setupDB()
+	defer conn.Disconnect()
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, p *http.Request) {
@@ -55,6 +62,22 @@ func main() {
 	// 	var res = cacheservice.Get("1")
 	// 	fmt.Fprint(w, res)
 	// })
+	r.HandleFunc("/getJobs", func(w http.ResponseWriter, p *http.Request) {
+		var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
+
+		jobservice, err := service.GetJobServiceObj()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(err)
+		}
+		response, err := jobservice.GetJobs(pageSize, pageNumber)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(err)
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}).Methods("GET")
 
 	r.HandleFunc("/sms", func(w http.ResponseWriter, p *http.Request) {
 		fmt.Println("SMS API initiated")

@@ -16,6 +16,7 @@ type IConnection interface {
 	Disconnect() error
 }
 
+var conn IConnection
 var mongoClient *mongo.Client
 var contextObj context.Context
 
@@ -24,12 +25,18 @@ type Connection struct {
 	contextTimeout   time.Duration
 }
 
-func InitConnection(connectionString string, timeout int) IConnection {
-	return &Connection{
+func InitConnection(connectionString string, timeout int) (IConnection, error) {
+	if conn != nil {
+		return conn, nil
+	}
+	conn = &Connection{
 		connectionString: connectionString,
 		contextTimeout:   time.Duration(timeout),
 	}
+	_, _, err := conn.GetConnction()
+	return conn, err
 }
+
 func (conn *Connection) validateConnectionParams() error {
 	if conn.connectionString == "" || conn.contextTimeout < time.Duration(1) {
 		return fmt.Errorf("connection params not set")
@@ -63,7 +70,6 @@ func (conn *Connection) ValidateConnection() error {
 	return nil
 }
 func (conn *Connection) GetConnction() (*mongo.Client, context.Context, error) {
-
 	err := conn.validateConnectionParams()
 	if err != nil {
 		return nil, nil, err

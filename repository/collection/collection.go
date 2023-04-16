@@ -4,10 +4,10 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/architagr/repository/connection"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"jobcrawler.api/repository/connection"
 )
 
 type ICollection[T any] interface {
