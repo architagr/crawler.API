@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -120,10 +121,17 @@ func main() {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("OTP received: " + detail.OTP)
+		jsonStr, err := json.Marshal(detail)
+		fmt.Printf("OTP received: " + string(jsonStr))
 
+		authService, err := service.AuthServiceObj()
+		token, err := authService.GetJWT(detail)
+
+		userService, err := service.UserServiceObj()
+		result, err := userService.Login(detail)
+		fmt.Printf("user created: " + result.(string))
 		//validate OTP
-		return c.JSON(true)
+		return c.JSON(token)
 	})
 
 	log.Fatal(app.Listen(":8080"))
