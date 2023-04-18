@@ -1,21 +1,20 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
-	"net/http"
 	"strconv"
 
 	"jobcrawler.api/config"
+	"jobcrawler.api/models"
 	"jobcrawler.api/repository/connection"
 	"jobcrawler.api/service"
 
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
+	_ "jobcrawler.api/middleware"
 )
 
 var conn connection.IConnection
@@ -42,11 +41,12 @@ func setupDB() {
 func main() {
 	env = config.GetConfig()
 	setupDB()
-	defer conn.Disconnect()
-	r := mux.NewRouter()
+	//defer conn.Disconnect()
+	app := fiber.New()
 
-	r.HandleFunc("/", func(w http.ResponseWriter, p *http.Request) {
-		w.Write([]byte("Hello, world!"))
+	app.Get("/test/:name", func(c *fiber.Ctx) error {
+		name := c.Params("name")
+		return c.SendString(fmt.Sprintf("Hello, %s!", name))
 	})
 
 	// r.HandleFunc("/set", func(w http.ResponseWriter, p *http.Request) {
@@ -62,36 +62,32 @@ func main() {
 	// 	var res = cacheservice.Get("1")
 	// 	fmt.Fprint(w, res)
 	// })
-	r.HandleFunc("/getJobs", func(w http.ResponseWriter, p *http.Request) {
+
+	app.Get("/getJobs", func(c *fiber.Ctx) error {
 		var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
 
 		jobservice, err := service.GetJobServiceObj()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(err)
+			return err
 		}
 		response, err := jobservice.GetJobs(pageSize, pageNumber)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(err)
+			return err
 		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	}).Methods("GET")
+		return c.JSON(response)
+	})
 
-	r.HandleFunc("/sms", func(w http.ResponseWriter, p *http.Request) {
+	app.Post("/sms", func(c *fiber.Ctx) error {
 		fmt.Println("SMS API initiated")
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		//w.Header().Set("Access-Control-Allow-Origin", "*")
+		//w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		//get request param
-		body, err := ioutil.ReadAll(p.Body)
-		if err != nil {
-			http.Error(w, "Error reading request body", http.StatusBadRequest)
-			return
+
+		phoneNo := ""
+		if err := c.BodyParser(phoneNo); err != nil {
+			return err
 		}
-		defer p.Body.Close()
-		phoneNo := string(body)
 		fmt.Println("mobileno: " + phoneNo)
 
 		accountSaid := "AC67b72d1e3041953fc3fb10da36a0c5a0"
@@ -108,35 +104,27 @@ func main() {
 
 		_, err1 := client.Api.CreateMessage(params)
 		if err1 != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			fmt.Println(err.Error())
-			return
+			return err1
 		} else {
 			fmt.Println("SMS sent successfully")
 		}
 
-		json.NewEncoder(w).Encode("Message sent successfully")
-	}).Methods("POST")
+		return c.JSON("Message sent successfully")
+	})
 
-	r.HandleFunc("/login", func(w http.ResponseWriter, p *http.Request) {
+	app.Post("/login", func(c *fiber.Ctx) error {
 		fmt.Println("Process for login initiated")
-
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
+		detail := new(models.LoginDetails)
 		//get request param
-		body, err := ioutil.ReadAll(p.Body)
+		err := c.BodyParser(detail)
 		if err != nil {
-			http.Error(w, "Error reading request body", http.StatusBadRequest)
-			return
+			return err
 		}
-		defer p.Body.Close()
-		otp := string(body)
-		fmt.Printf("OTP received: " + otp)
+		fmt.Printf("OTP received: " + detail.OTP)
 
 		//validate OTP
-		fmt.Fprint(w, true)
-	}).Methods("POST")
+		return c.JSON(true)
+	})
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(app.Listen(":8080"))
 }
