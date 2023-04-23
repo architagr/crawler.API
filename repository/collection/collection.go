@@ -2,6 +2,7 @@ package collection
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,6 +17,7 @@ type ICollection[T any] interface {
 	AddMany(data []T) (ids []interface{}, err error)
 	GetById(id interface{}) (data T, err error)
 	Get(filter interface{}, pageSize int64, startPage int64) (data []T, err error)
+	GetUserByUserName(userName string) (data T, err error)
 }
 
 type Collection[T any] struct {
@@ -37,13 +39,28 @@ func InitCollection[T any](conn connection.IConnection, databaseName, collection
 	}, nil
 }
 
+func (doc *Collection[T]) GetUserByUserName(userName string) (data T, err error) {
+	filter := bson.M{"username": userName}
+	existingUser := new(T)
+	err = doc.collection.FindOne(context.Background(), filter).Decode(&existingUser)
+	if err == nil {
+		fmt.Print("User already exists")
+		return *existingUser, nil
+	} else if err != mongo.ErrNoDocuments {
+		fmt.Print(err)
+		return
+	}
+	return *existingUser, nil
+
+}
+
 func (doc *Collection[T]) Disconnect() {
 	doc.mongoClient.Disconnect(doc.ctx)
 }
 
 func (doc *Collection[T]) AddSingle(data T) (id interface{}, err error) {
 
-	result, err := doc.collection.InsertOne(context.TODO(), data)
+	result, err := doc.collection.InsertOne(context.Background(), data)
 	if err != nil {
 		return
 	}
@@ -56,7 +73,7 @@ func (doc *Collection[T]) AddMany(data []T) (ids []interface{}, err error) {
 	for i, d := range data {
 		docs[i] = d
 	}
-	result, err := doc.collection.InsertMany(context.TODO(), docs)
+	result, err := doc.collection.InsertMany(doc.ctx, docs)
 	if err != nil {
 		return
 	}

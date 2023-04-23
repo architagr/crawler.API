@@ -13,6 +13,7 @@ import (
 	"jobcrawler.api/service"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
 	_ "jobcrawler.api/middleware"
@@ -44,6 +45,13 @@ func main() {
 	setupDB()
 	//defer conn.Disconnect()
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin",
+		AllowOrigins:     "*",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+	}))
 
 	app.Get("/test/:name", func(c *fiber.Ctx) error {
 		name := c.Params("name")
@@ -129,9 +137,16 @@ func main() {
 
 		userService, err := service.UserServiceObj()
 		result, err := userService.Login(detail)
-		fmt.Printf("user created: " + result.(string))
-		//validate OTP
-		return c.JSON(token)
+		fmt.Printf("user created: " + strconv.FormatBool(result))
+		var res = new(models.Response)
+		if result {
+			res.Status = "OK"
+			res.Data = token
+		} else {
+			res.Status = "Failed"
+			res.Data = "Login Failed"
+		}
+		return c.JSON(res)
 	})
 
 	log.Fatal(app.Listen(":8080"))
