@@ -19,6 +19,6 @@ type JobDetails struct {
 
 type GetJobResponse struct {
 	Jobs       []JobDetails `json:"jobs"`
-	PageSize   int64        `json:"pageSize"`
-	PageNumber int64        `json:"pageNumber"`
+	PageSize   int16        `json:"pageSize"`
+	PageNumber int16        `json:"pageNumber"`
 }

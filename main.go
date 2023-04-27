@@ -73,13 +73,20 @@ func main() {
 	// })
 
 	app.Get("/getJobs", func(c *fiber.Ctx) error {
-		var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
+		//var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
 
+		//get params from body
+		filter := new(models.JobFilter)
+		if err := c.BodyParser(filter); err != nil {
+			return err
+		}
+		_filter, err := json.Marshal(filter)
+		fmt.Println("filter: " + string(_filter))
 		jobservice, err := service.GetJobServiceObj()
 		if err != nil {
 			return err
 		}
-		response, err := jobservice.GetJobs(pageSize, pageNumber)
+		response, err := jobservice.GetJobs(filter.PageSize, filter.PageNumber)
 		if err != nil {
 			return err
 		}

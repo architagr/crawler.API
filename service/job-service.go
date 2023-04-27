@@ -8,7 +8,7 @@ import (
 )
 
 type IJobService interface {
-	GetJobs(pageSize, pageNumber int64) (*models.GetJobResponse, error)
+	GetJobs(pageSize, pageNumber int16) (*models.GetJobResponse, error)
 }
 
 type JobService struct {
@@ -30,8 +30,8 @@ func GetJobServiceObj() (IJobService, error) {
 	}, nil
 }
 
-func (svc *JobService) GetJobs(pageSize, pageNumber int64) (*models.GetJobResponse, error) {
-	data, err := svc.collectionObj.Get(nil, pageSize, pageNumber)
+func (svc *JobService) GetJobs(pageSize, pageNumber int16) (*models.GetJobResponse, error) {
+	data, err := svc.collectionObj.Get(nil, int64(pageSize), int64(pageNumber))
 	if err != nil {
 		return nil, err
 	}
