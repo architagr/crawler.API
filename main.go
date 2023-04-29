@@ -72,7 +72,7 @@ func main() {
 	// 	fmt.Fprint(w, res)
 	// })
 
-	app.Get("/getJobs", func(c *fiber.Ctx) error {
+	app.Post("/getJobs", func(c *fiber.Ctx) error {
 		//var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
 
 		//get params from body
@@ -86,7 +86,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-		response, err := jobservice.GetJobs(filter.PageSize, filter.PageNumber)
+		response, err := jobservice.GetJobs(filter, filter.PageSize, filter.PageNumber)
 		if err != nil {
 			return err
 		}

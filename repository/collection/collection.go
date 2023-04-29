@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"jobcrawler.api/models"
 	"jobcrawler.api/repository/connection"
 )
 
@@ -16,7 +17,7 @@ type ICollection[T any] interface {
 	AddSingle(data T) (id interface{}, err error)
 	AddMany(data []T) (ids []interface{}, err error)
 	GetById(id interface{}) (data T, err error)
-	Get(filter interface{}, pageSize int64, startPage int64) (data []T, err error)
+	Get(filter *models.JobFilter, pageSize int64, startPage int64) (data []T, err error)
 	GetUserByUserName(userName string) (data T, err error)
 }
 
@@ -98,7 +99,7 @@ func (doc *Collection[T]) GetById(id interface{}) (data T, err error) {
 	return
 }
 
-func (doc *Collection[T]) Get(filter interface{}, pageSize int64, startPage int64) (data []T, err error) {
+func (doc *Collection[T]) Get(filter *models.JobFilter, pageSize int64, startPage int64) (data []T, err error) {
 	if pageSize == 0 {
 		pageSize = 10
 	}
@@ -106,13 +107,35 @@ func (doc *Collection[T]) Get(filter interface{}, pageSize int64, startPage int6
 	if skip > 0 {
 		skip--
 	}
+	_filter := bson.M{}
 	if filter == nil {
-		filter = bson.D{{}}
+		_filter = bson.M{}
+	} else {
+		if filter.Location != "" {
+			_filter = bson.M{
+				"$and": []bson.M{
+					bson.M{"location": filter.Location},
+					bson.M{
+						"$or": []bson.M{
+							bson.M{"title": filter.Keywords},
+							bson.M{"companyname": filter.Keywords},
+						},
+					},
+				},
+			}
+		} else {
+			_filter = bson.M{
+				"$or": []bson.M{
+					bson.M{"title": filter.Keywords},
+					bson.M{"companyname": filter.Keywords},
+				},
+			}
+		}
 	}
 	filterOptions := options.Find()
 	filterOptions.Limit = &pageSize
 	filterOptions.Skip = &skip
-	result, err := doc.collection.Find(context.TODO(), filter, filterOptions)
+	result, err := doc.collection.Find(context.TODO(), _filter, filterOptions)
 	if err != nil {
 		return
 	}
