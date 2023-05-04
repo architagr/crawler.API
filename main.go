@@ -93,12 +93,22 @@ func main() {
 		return c.JSON(response)
 	})
 
+	app.Get("/getJobDetail/:id", func(c *fiber.Ctx) error {
+		//get params from body
+		jobId := c.Params("id")
+		jobservice, err := service.GetJobServiceObj()
+		if err != nil {
+			return err
+		}
+		response, err := jobservice.GetJobDetail(jobId)
+		if err != nil {
+			return err
+		}
+		return c.JSON(response)
+	})
+
 	app.Post("/sms", func(c *fiber.Ctx) error {
 		fmt.Println("SMS API initiated")
-
-		//w.Header().Set("Access-Control-Allow-Origin", "*")
-		//w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		//get request param
 
 		phoneNo := ""
 		if err := c.BodyParser(phoneNo); err != nil {

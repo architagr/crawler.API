@@ -1,9 +1,10 @@
 package models
 
 type JobDetails struct {
-	Title       string `json:"title"`
-	CompanyName string `json:"companyName"`
-	Location    string `json:"location"`
+	Id          interface{} `json:"_id" bson:"_id,omitempty"`
+	Title       string      `json:"title"`
+	CompanyName string      `json:"companyName"`
+	Location    string      `json:"location"`
 
 	ComapnyDetailsUrl string `json:"companyDetailsUrl"`
 	// JobType           constants.JobType  `json:"jobType"`

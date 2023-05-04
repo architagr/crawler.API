@@ -9,6 +9,7 @@ import (
 
 type IJobService interface {
 	GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error)
+	GetJobDetail(id string) (*models.JobDetails, error)
 }
 
 type JobService struct {
@@ -40,4 +41,12 @@ func (svc *JobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber in
 		PageSize:   pageSize,
 		PageNumber: pageNumber,
 	}, nil
+}
+
+func (svc *JobService) GetJobDetail(id string) (*models.JobDetails, error) {
+	data, err := svc.collectionObj.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
 }

@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"jobcrawler.api/models"
@@ -16,7 +17,7 @@ type ICollection[T any] interface {
 	Disconnect()
 	AddSingle(data T) (id interface{}, err error)
 	AddMany(data []T) (ids []interface{}, err error)
-	GetById(id interface{}) (data T, err error)
+	GetById(id string) (data T, err error)
 	Get(filter *models.JobFilter, pageSize int64, startPage int64) (data []T, err error)
 	GetUserByUserName(userName string) (data T, err error)
 }
@@ -82,10 +83,12 @@ func (doc *Collection[T]) AddMany(data []T) (ids []interface{}, err error) {
 	return
 }
 
-func (doc *Collection[T]) GetById(id interface{}) (data T, err error) {
-	filter := make(map[string]interface{})
-	filter["_id"] = id
-	result := doc.collection.FindOne(context.TODO(), filter)
+func (doc *Collection[T]) GetById(id string) (data T, err error) {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return
+	}
+	result := doc.collection.FindOne(context.TODO(), bson.M{"_id": objectId})
 	if result.Err() != nil {
 		err = result.Err()
 		return
