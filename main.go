@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"jobcrawler.api/config"
@@ -152,7 +155,7 @@ func main() {
 		authService, err := service.AuthServiceObj()
 		token, err := authService.GetJWT(detail)
 
-		userService, err := service.UserServiceObj()
+		userService, err := service.UserServiceObj("userDetails")
 		result, err := userService.Login(detail)
 		fmt.Printf("user created: " + strconv.FormatBool(result))
 		var res = new(models.Response)
@@ -164,6 +167,118 @@ func main() {
 			res.Data = "Login Failed"
 		}
 		return c.JSON(res)
+	})
+
+	app.Post("/saveUserProfile", func(c *fiber.Ctx) error {
+		detail := new(models.UserDetail)
+		//get request param
+		err := c.BodyParser(detail)
+		if err != nil {
+			return err
+		}
+
+		userService, err := service.UserProfileServiceObj("userProfile")
+		result, err := userService.SaveUserProfile(detail)
+		if err != nil {
+			return err
+		}
+		return c.JSON(result)
+	})
+
+	app.Post("/saveuserImage/:id", func(c *fiber.Ctx) error {
+		form, err := c.MultipartForm()
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to retrieve the image"})
+		}
+
+		files := form.File["image"]
+		if len(files) == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No image file found"})
+		}
+
+		file := files[0]
+		src, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open the image"})
+		}
+		defer src.Close()
+
+		userId := c.Params("id")
+
+		// Create a unique filename
+		ext := filepath.Ext(file.Filename)
+		filename := userId + ext
+
+		// Specify the folder path to save the uploaded file
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get current directory"})
+		}
+
+		// Specify the folder path to save the uploaded file
+		uploadDir := filepath.Join(currentDir, "uploads")
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create upload directory"})
+		}
+
+		filePath := filepath.Join(uploadDir, filename)
+
+		// Create the destination file
+		dst, err := os.Create(filePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save the image"})
+		}
+		defer dst.Close()
+
+		// Copy the uploaded file to the destination
+		if _, err := io.Copy(dst, src); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save the image"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Image uploaded successfully"})
+	})
+
+	app.Get("/image/:id", func(c *fiber.Ctx) error {
+		imagePath, err := os.Getwd() // Update with the actual path to your saved image
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get current directory"})
+		}
+
+		uploadDir := filepath.Join(imagePath, "uploads")
+
+		filename := c.Params("id") + ".png"
+		filePath := filepath.Join(uploadDir, filename)
+
+		// Check if the image file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			return c.Status(fiber.StatusNotFound).SendString("Image not found")
+		}
+
+		// Get the file's content type
+		contentType := "image/jpeg" // Update with the appropriate content type of your image
+
+		// Set the response headers
+		c.Set(fiber.HeaderContentType, contentType)
+		c.Set(fiber.HeaderCacheControl, "max-age=31536000") // Optional: Cache the image for a year
+
+		// Send the image file as the response
+		return c.SendFile(filePath)
+	})
+
+	app.Get("/getUserProfile/:userId", func(c *fiber.Ctx) error {
+		email := c.Params("userId")
+
+		userService, err := service.UserProfileServiceObj("userProfile")
+		if err != nil {
+			return err
+		}
+		result, err := userService.GetUserProfile(email)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(result)
 	})
 
 	log.Fatal(app.Listen(":8080"))

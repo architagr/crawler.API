@@ -1,6 +1,7 @@
 package service
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
 	"jobcrawler.api/config"
 	"jobcrawler.api/models"
 	"jobcrawler.api/repository/collection"
@@ -32,7 +33,33 @@ func GetJobServiceObj() (IJobService, error) {
 }
 
 func (svc *JobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
-	data, err := svc.collectionObj.Get(filter, int64(pageSize), int64(pageNumber))
+
+	_filter := bson.M{}
+	if filter == nil {
+		_filter = bson.M{}
+	} else {
+		if filter.Location != "" {
+			_filter = bson.M{
+				"$and": []bson.M{
+					bson.M{"location": filter.Location},
+					bson.M{
+						"$or": []bson.M{
+							bson.M{"title": filter.Keywords},
+							bson.M{"companyname": filter.Keywords},
+						},
+					},
+				},
+			}
+		} else {
+			_filter = bson.M{
+				"$or": []bson.M{
+					bson.M{"title": filter.Keywords},
+					bson.M{"companyname": filter.Keywords},
+				},
+			}
+		}
+	}
+	data, err := svc.collectionObj.Get(_filter, int64(pageSize), int64(pageNumber))
 	if err != nil {
 		return nil, err
 	}

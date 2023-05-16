@@ -18,13 +18,13 @@ type UserService struct {
 	collectionObj collection.ICollection[models.LoginDetails]
 }
 
-func UserServiceObj() (IUserService, error) {
+func UserServiceObj(collectionName string) (IUserService, error) {
 	env := config.GetConfig()
 	connObj, err := connection.InitConnection(env.GetDatabaseConnectionString(), 10)
 	if err != nil {
 		return nil, err
 	}
-	doc, err := collection.InitCollection[models.LoginDetails](connObj, env.GetDatabaseName(), "userDetails")
+	doc, err := collection.InitCollection[models.LoginDetails](connObj, env.GetDatabaseName(), collectionName)
 
 	if err != nil {
 		return nil, err

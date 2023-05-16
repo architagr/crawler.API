@@ -9,17 +9,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"jobcrawler.api/models"
 	"jobcrawler.api/repository/connection"
 )
 
 type ICollection[T any] interface {
 	Disconnect()
 	AddSingle(data T) (id interface{}, err error)
+	UpdateSingle(data primitive.M, _id string) error
 	AddMany(data []T) (ids []interface{}, err error)
 	GetById(id string) (data T, err error)
-	Get(filter *models.JobFilter, pageSize int64, startPage int64) (data []T, err error)
+	Get(filter primitive.M, pageSize int64, startPage int64) (data []T, err error)
 	GetUserByUserName(userName string) (data T, err error)
+	GetProfileByEmail(email string) (data T, err error)
 }
 
 type Collection[T any] struct {
@@ -53,7 +54,19 @@ func (doc *Collection[T]) GetUserByUserName(userName string) (data T, err error)
 		return
 	}
 	return *existingUser, nil
-
+}
+func (doc *Collection[T]) GetProfileByEmail(email string) (data T, err error) {
+	filter := bson.M{"email": email}
+	existingUser := new(T)
+	err = doc.collection.FindOne(context.Background(), filter).Decode(&existingUser)
+	if err == nil {
+		fmt.Print("User already exists")
+		return *existingUser, nil
+	} else if err != mongo.ErrNoDocuments {
+		fmt.Print(err)
+		return
+	}
+	return *existingUser, nil
 }
 
 func (doc *Collection[T]) Disconnect() {
@@ -68,6 +81,18 @@ func (doc *Collection[T]) AddSingle(data T) (id interface{}, err error) {
 	}
 	id = result.InsertedID
 	return
+}
+
+func (doc *Collection[T]) UpdateSingle(data primitive.M, _id string) error {
+	objectId, err := primitive.ObjectIDFromHex(_id)
+	if err != nil {
+		return err
+	}
+	_, err = doc.collection.UpdateOne(context.Background(), bson.M{"_id": objectId}, data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (doc *Collection[T]) AddMany(data []T) (ids []interface{}, err error) {
@@ -102,7 +127,7 @@ func (doc *Collection[T]) GetById(id string) (data T, err error) {
 	return
 }
 
-func (doc *Collection[T]) Get(filter *models.JobFilter, pageSize int64, startPage int64) (data []T, err error) {
+func (doc *Collection[T]) Get(filter primitive.M, pageSize int64, startPage int64) (data []T, err error) {
 	if pageSize == 0 {
 		pageSize = 10
 	}
@@ -110,35 +135,10 @@ func (doc *Collection[T]) Get(filter *models.JobFilter, pageSize int64, startPag
 	if skip > 0 {
 		skip--
 	}
-	_filter := bson.M{}
-	if filter == nil {
-		_filter = bson.M{}
-	} else {
-		if filter.Location != "" {
-			_filter = bson.M{
-				"$and": []bson.M{
-					bson.M{"location": filter.Location},
-					bson.M{
-						"$or": []bson.M{
-							bson.M{"title": filter.Keywords},
-							bson.M{"companyname": filter.Keywords},
-						},
-					},
-				},
-			}
-		} else {
-			_filter = bson.M{
-				"$or": []bson.M{
-					bson.M{"title": filter.Keywords},
-					bson.M{"companyname": filter.Keywords},
-				},
-			}
-		}
-	}
 	filterOptions := options.Find()
 	filterOptions.Limit = &pageSize
 	filterOptions.Skip = &skip
-	result, err := doc.collection.Find(context.TODO(), _filter, filterOptions)
+	result, err := doc.collection.Find(context.TODO(), filter, filterOptions)
 	if err != nil {
 		return
 	}
