@@ -2,10 +2,8 @@ package service
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
-	"jobcrawler.api/config"
 	"jobcrawler.api/models"
-	"jobcrawler.api/repository/collection"
-	"jobcrawler.api/repository/connection"
+	"jobcrawler.api/repository"
 )
 
 type IJobService interface {
@@ -13,26 +11,22 @@ type IJobService interface {
 	GetJobDetail(id string) (*models.JobDetails, error)
 }
 
-type JobService struct {
-	collectionObj collection.ICollection[models.JobDetails]
+type jobService struct {
+	repo repository.IJobDetailsRepository
 }
 
-func GetJobServiceObj() (IJobService, error) {
-	env := config.GetConfig()
-	connObj, err := connection.InitConnection(env.GetDatabaseConnectionString(), 10)
-	if err != nil {
-		return nil, err
+var jobServiceObj IJobService
+
+func InitJobService(repoObj repository.IJobDetailsRepository) IJobService {
+	if jobServiceObj == nil {
+		jobServiceObj = &jobService{
+			repo: repoObj,
+		}
 	}
-	doc, err := collection.InitCollection[models.JobDetails](connObj, env.GetDatabaseName(), env.GetCollectionName())
-	if err != nil {
-		return nil, err
-	}
-	return &JobService{
-		collectionObj: doc,
-	}, nil
+	return jobServiceObj
 }
 
-func (svc *JobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
+func (svc *jobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
 
 	_filter := bson.M{}
 	if filter == nil {
@@ -59,7 +53,7 @@ func (svc *JobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber in
 			}
 		}
 	}
-	data, err := svc.collectionObj.Get(_filter, int64(pageSize), int64(pageNumber))
+	data, err := svc.repo.GetJob(&_filter, pageSize, pageNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +64,10 @@ func (svc *JobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber in
 	}, nil
 }
 
-func (svc *JobService) GetJobDetail(id string) (*models.JobDetails, error) {
-	data, err := svc.collectionObj.GetById(id)
+func (svc *jobService) GetJobDetail(id string) (*models.JobDetails, error) {
+	data, err := svc.repo.GetJobDetail(id)
 	if err != nil {
 		return nil, err
 	}
-	return &data, nil
+	return data, nil
 }

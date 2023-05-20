@@ -2,13 +2,20 @@ package config
 
 import "os"
 
+var ConfigContainerKey = "config"
+
+type IConfig interface {
+	GetDatabaseConnectionString() string
+	GetDatabaseName() string
+	GetCollectionName() string
+}
 type Config struct {
 	databaseConnectionString string
 	databaseName             string
 	collectionName           string
 }
 
-var env *Config
+var env IConfig
 
 const (
 	databaseConnectionStringKey = "DbConnectionString"
@@ -24,7 +31,7 @@ func InitConfig() {
 	}
 }
 
-func GetConfig() *Config {
+func GetConfig() IConfig {
 	if env == nil {
 		InitConfig()
 	}

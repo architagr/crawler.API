@@ -1,6 +1,43 @@
 package main
 
 import (
+	"jobcrawler.api/config"
+	"jobcrawler.api/repository"
+	"jobcrawler.api/service"
+)
+
+var envVariables config.IConfig
+var jobDetailsRepoObj repository.IJobDetailsRepository
+var jobDetailsService service.IJobService
+
+func main() {
+	initConfig()
+	initRepository()
+	intitServices()
+}
+func initConfig() {
+	envVariables = config.GetConfig()
+}
+func initRepository() {
+	mongodbConnection, err := repository.InitConnection(envVariables.GetDatabaseConnectionString(), 10)
+	if err != nil {
+		panic(err)
+	}
+
+	jobDetailsRepoObj, err = repository.InitJobDetailsRepo(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetCollectionName())
+	if err != nil {
+		panic(err)
+	}
+}
+
+func intitServices() {
+	jobDetailsService = service.InitJobService(jobDetailsRepoObj)
+}
+
+/*
+
+
+import (
 	"encoding/json"
 	"fmt"
 	"io"
@@ -283,3 +320,4 @@ func main() {
 
 	log.Fatal(app.Listen(":8080"))
 }
+*/

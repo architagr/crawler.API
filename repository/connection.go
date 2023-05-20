@@ -1,4 +1,4 @@
-package connection
+package repository
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var MongoDbConnectionContainerKey = "MongoDbConnection"
+
 type IConnection interface {
 	ValidateConnection() error
 	GetConnction() (*mongo.Client, context.Context, error)
@@ -20,7 +22,7 @@ var conn IConnection
 var mongoClient *mongo.Client
 var contextObj context.Context
 
-type Connection struct {
+type connection struct {
 	connectionString string
 	contextTimeout   time.Duration
 }
@@ -29,7 +31,7 @@ func InitConnection(connectionString string, timeout int) (IConnection, error) {
 	if conn != nil {
 		return conn, nil
 	}
-	conn = &Connection{
+	conn = &connection{
 		connectionString: connectionString,
 		contextTimeout:   time.Duration(timeout),
 	}
@@ -37,16 +39,16 @@ func InitConnection(connectionString string, timeout int) (IConnection, error) {
 	return conn, err
 }
 
-func (conn *Connection) validateConnectionParams() error {
+func (conn *connection) validateConnectionParams() error {
 	if conn.connectionString == "" || conn.contextTimeout < time.Duration(1) {
 		return fmt.Errorf("connection params not set")
 	}
 	return nil
 }
-func (conn *Connection) Disconnect() error {
+func (conn *connection) Disconnect() error {
 	return mongoClient.Disconnect(contextObj)
 }
-func (conn *Connection) ValidateConnection() error {
+func (conn *connection) ValidateConnection() error {
 	err := conn.validateConnectionParams()
 	if err != nil {
 		return err
@@ -69,7 +71,7 @@ func (conn *Connection) ValidateConnection() error {
 	}
 	return nil
 }
-func (conn *Connection) GetConnction() (*mongo.Client, context.Context, error) {
+func (conn *connection) GetConnction() (*mongo.Client, context.Context, error) {
 	err := conn.validateConnectionParams()
 	if err != nil {
 		return nil, nil, err

@@ -1,4 +1,4 @@
-package collection
+package repository
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"jobcrawler.api/repository/connection"
 )
 
 type ICollection[T any] interface {
@@ -29,7 +28,7 @@ type Collection[T any] struct {
 	collection  *mongo.Collection
 }
 
-func InitCollection[T any](conn connection.IConnection, databaseName, collection string) (ICollection[T], error) {
+func InitCollection[T any](conn IConnection, databaseName, collection string) (ICollection[T], error) {
 	client, ctx, err := conn.GetConnction()
 	if err != nil {
 		return nil, err
