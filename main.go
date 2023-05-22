@@ -3,18 +3,22 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"jobcrawler.api/config"
 	"jobcrawler.api/models"
 	"jobcrawler.api/repository/connection"
 	"jobcrawler.api/service"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/twilio/twilio-go"
@@ -30,6 +34,27 @@ type Message struct {
 	From    string `json:"test"`
 	Message string `json:"message"`
 }
+
+//#region init db connection
+//#endregin
+
+//#region init elastic connection
+//#endregin
+
+//#region init cache
+//#endregin
+
+//#region init repo objects passing the required connection
+//#endregin
+
+//#region init service objects using repo objects and cache
+//#endregin
+
+//#region init controller objects using service ojects
+//#endregin
+
+//#region init router using controller
+//#endregin
 
 func setupDB() {
 	var err error
@@ -201,6 +226,7 @@ func main() {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open the image"})
 		}
+
 		defer src.Close()
 
 		userId := c.Params("id")
@@ -209,32 +235,7 @@ func main() {
 		ext := filepath.Ext(file.Filename)
 		filename := userId + ext
 
-		// Specify the folder path to save the uploaded file
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get current directory"})
-		}
-
-		// Specify the folder path to save the uploaded file
-		uploadDir := filepath.Join(currentDir, "uploads")
-		err = os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create upload directory"})
-		}
-
-		filePath := filepath.Join(uploadDir, filename)
-
-		// Create the destination file
-		dst, err := os.Create(filePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save the image"})
-		}
-		defer dst.Close()
-
-		// Copy the uploaded file to the destination
-		if _, err := io.Copy(dst, src); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save the image"})
-		}
+		saveImagetoAWS(src, filename, file.Size)
 
 		return c.JSON(fiber.Map{"message": "Image uploaded successfully"})
 	})
@@ -278,8 +279,69 @@ func main() {
 			return err
 		}
 
+		result.ImagePath, err = getUserImageURL(result.Id + ".png")
+		if err != nil {
+			return err
+		}
+
 		return c.JSON(result)
 	})
 
 	log.Fatal(app.Listen(":8080"))
+}
+
+func saveImagetoAWS(_file multipart.File, fileName string, size int64) {
+	// Specify your AWS region and S3 bucket name
+	//region := "Asia Pacific (Mumbai) ap-south-1"
+	bucketName := "jobcrawler.portalimages"
+
+	// Create an AWS session
+	// sess, err := session.NewSession(&aws.Config{
+	// 	Region: aws.String(region)},
+	// )
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	// Create an S3 client
+	svc := s3.New(sess)
+
+	// Create an S3 object with the specified bucket and key (filename)
+	_, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket:        aws.String(bucketName),
+		Key:           aws.String(fileName),
+		Body:          _file,
+		ContentLength: aws.Int64(size),
+		ContentType:   aws.String("image/jpeg"), // Specify the correct content type
+	})
+	if err != nil {
+		fmt.Println("Failed to upload image:", err)
+		return
+	}
+
+	fmt.Println("Image uploaded successfully!")
+}
+
+func getUserImageURL(filename string) (string, error) {
+	bucketName := "jobcrawler.portalimages"
+
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	// Create an S3 client
+	svc := s3.New(sess)
+
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(filename),
+	}
+
+	req, _ := svc.GetObjectRequest(params)
+
+	url, err := req.Presign(time.Duration(2 * time.Hour)) // Set link expiration time
+	if err != nil {
+		return "", err
+	}
+	return url, nil
 }
