@@ -1,9 +1,10 @@
 package service
 
 import (
+	"JobAPI/models"
+	"JobAPI/repository"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"jobcrawler.api/models"
-	"jobcrawler.api/repository"
 )
 
 type IJobService interface {
@@ -33,17 +34,18 @@ func (svc *jobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber in
 		_filter = bson.M{}
 	} else {
 		if filter.Location != "" {
-			_filter = bson.M{
-				"$and": []bson.M{
-					bson.M{"location": filter.Location},
-					bson.M{
-						"$or": []bson.M{
-							bson.M{"title": filter.Keywords},
-							bson.M{"companyname": filter.Keywords},
-						},
-					},
-				},
-			}
+			_filter = bson.M{"location": filter.Location}
+			// _filter = bson.M{
+			// 	"$and": []bson.M{
+			// 		bson.M{"location": filter.Location},
+			// 		bson.M{
+			// 			"$or": []bson.M{
+			// 				bson.M{"title": filter.Keywords},
+			// 				bson.M{"companyname": filter.Keywords},
+			// 			},
+			// 		},
+			// 	},
+			// }
 		} else {
 			_filter = bson.M{
 				"$or": []bson.M{
