@@ -3,11 +3,8 @@ package main
 import (
 	"JobAPI/config"
 	"JobAPI/controller"
-	"JobAPI/models"
 	"JobAPI/repository"
 	"JobAPI/service"
-	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -62,25 +59,7 @@ func initRoutes() {
 
 	app.Get("/test/:name", jobControllerObj.Test)
 
-	app.Post("/getJobs", GetJobs)
+	app.Post("/getJobs", jobControllerObj.getJobs)
 
 	log.Fatal(app.Listen(":8080"))
-}
-
-func GetJobs(c *fiber.Ctx) error {
-	//var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
-
-	//get params from body
-	filter := new(models.JobFilter)
-	if err := c.BodyParser(filter); err != nil {
-		return err
-	}
-	_filter, err := json.Marshal(filter)
-	fmt.Println("filter: " + string(_filter))
-
-	response, err := jobDetailsService.GetJobs(filter, filter.PageSize, filter.PageNumber)
-	if err != nil {
-		return err
-	}
-	return c.JSON(response)
 }

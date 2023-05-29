@@ -30,27 +30,25 @@ func InitJobService(repoObj repository.IJobDetailsRepository) IJobService {
 func (svc *jobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
 
 	_filter := bson.M{}
-	if filter == nil {
-		_filter = bson.M{}
-	} else {
+	if filter != nil {
 		if filter.Location != "" {
-			_filter = bson.M{"location": filter.Location}
-			// _filter = bson.M{
-			// 	"$and": []bson.M{
-			// 		bson.M{"location": filter.Location},
-			// 		bson.M{
-			// 			"$or": []bson.M{
-			// 				bson.M{"title": filter.Keywords},
-			// 				bson.M{"companyname": filter.Keywords},
-			// 			},
-			// 		},
-			// 	},
-			// }
+			//_filter = bson.M{"location": filter.Location}
+			_filter = bson.M{
+				"$and": []bson.M{
+					bson.M{"location": filter.Location},
+					bson.M{
+						"$or": []bson.M{
+							bson.M{"title": filter.Keywords},
+							bson.M{"companyName": filter.Keywords},
+						},
+					},
+				},
+			}
 		} else {
 			_filter = bson.M{
 				"$or": []bson.M{
 					bson.M{"title": filter.Keywords},
-					bson.M{"companyname": filter.Keywords},
+					bson.M{"companyName": filter.Keywords},
 				},
 			}
 		}
