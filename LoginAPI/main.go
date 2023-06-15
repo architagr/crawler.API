@@ -1,15 +1,20 @@
 package main
 
 import (
-	"JobAPI/go/pkg/mod/github.com/gofiber/fiber/v2@v2.44.0/middleware/cors"
-	"JobAPI/go/pkg/mod/github.com/gofiber/fiber@v1.14.6"
+	"LoginAPI/config"
+	"LoginAPI/controller"
+	"LoginAPI/repository"
+	"LoginAPI/service"
 	"log"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 var envVariables config.IConfig
-var jobDetailsRepoObj repository.IJobDetailsRepository
-var jobDetailsService service.IJobService
-var jobControllerObj controller.IJobController
+var authRepoObj repository.IAuthRepository
+var authServiceObj service.IAuthService
+var authControllerObj controller.IAuthController
 
 func main() {
 	initConfig()
@@ -28,18 +33,18 @@ func initRepository() {
 		panic(err)
 	}
 
-	jobDetailsRepoObj, err = repository.InitJobDetailsRepo(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetCollectionName())
+	authRepoObj, err = repository.InitAuthRepo(mongodbConnection, envVariables.GetDatabaseName(), "authDetails")
 	if err != nil {
 		panic(err)
 	}
 }
 
 func intitServices() {
-	jobDetailsService = service.InitJobService(jobDetailsRepoObj)
+	authServiceObj = service.InitAuthService(authRepoObj)
 }
 
 func initControllers() {
-	jobControllerObj = controller.InitJobController(jobDetailsService)
+	authControllerObj = controller.InitAuthController(authServiceObj)
 }
 
 func initRoutes() {
@@ -52,9 +57,7 @@ func initRoutes() {
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
 
-	app.Get("/test/:name", jobControllerObj.Test)
+	app.Post("/createuser", authControllerObj.CreateUser)
 
-	app.Post("/getJobs", jobControllerObj.getJobs)
-
-	log.Fatal(app.Listen(":8080"))
+	log.Fatal(app.Listen(":8082"))
 }

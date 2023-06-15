@@ -59,7 +59,7 @@ func initRoutes() {
 
 	app.Get("/test/:name", jobControllerObj.Test)
 
-	app.Post("/getJobs", jobControllerObj.getJobs)
+	app.Post("/getJobs", jobControllerObj.GetJobs)
 
 	log.Fatal(app.Listen(":8080"))
 }
