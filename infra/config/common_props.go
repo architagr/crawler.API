@@ -53,14 +53,14 @@ type CommonProps struct {
 	InfraEnv
 }
 
-const baseDomain = "inventory-management.click"
+const baseDomain = "hiringfunda.com"
 
 func GetCommonProps(app awscdk.App) *CommonProps {
 	return &CommonProps{
 		JobAPIDB: DatabaseModel{
 			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
 			dbname:           "webscrapper",
-			collectionName:   "",
+			collectionName:   "test",
 		},
 		LoginAPIDB: DatabaseModel{
 			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
@@ -74,8 +74,8 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 		},
 		StackProps: env(app),
 		InfraEnv: InfraEnv{
-			HostedZoneId:    "Z00125422MSTTNZDZ5PRV",
-			CertificateArn:  "arn:aws:acm:ap-south-1:675174225340:certificate/4995bc1a-da1b-42b1-b8d8-504ad0b9826b",
+			HostedZoneId:    "Z069835117JUXI2FCKK2F",
+			CertificateArn:  "arn:aws:acm:ap-southeast-1:638580160310:certificate/39af19ea-f694-4524-83df-b043ba457278",
 			StackNamePrefix: "crawler-api",
 			Domains: Domain{
 				BaseApi: baseDomain,
@@ -118,8 +118,8 @@ func GetCorsPreflightOptions() *apigateway.CorsOptions {
 	}
 }
 
-func CreateAcmCertificate(scope constructs.Construct, props *InfraEnv) acm.ICertificate {
-	return acm.Certificate_FromCertificateArn(scope, jsii.String("clientApiCertificate"), &props.CertificateArn)
+func CreateAcmCertificate(stack awscdk.Stack, scope constructs.Construct, props *InfraEnv) acm.ICertificate {
+	return acm.Certificate_FromCertificateArn(stack, jsii.String("clientApiCertificate"), &props.CertificateArn)
 }
 
 func GetHostedZone(scope constructs.Construct, id *string, props InfraEnv) route53.IHostedZone {

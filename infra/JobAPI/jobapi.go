@@ -37,7 +37,7 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 	jobFunction := lambda.NewFunction(stack, jsii.String("job-lambda"), &lambda.FunctionProps{
 		Environment:  &env,
 		Runtime:      lambda.Runtime_GO_1_X(),
-		Handler:      jsii.String("internal-api"),
+		Handler:      jsii.String("JobAPI"),
 		Code:         lambda.Code_FromAsset(jsii.String("./../JobAPI/main.zip"), &awss3assets.AssetOptions{}),
 		FunctionName: jsii.String("job-lambda-fn"),
 	})
@@ -52,23 +52,17 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		EndpointTypes:               &[]apigateway.EndpointType{apigateway.EndpointType_EDGE},
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 		DomainName: &apigateway.DomainNameOptions{
-			Certificate: config.CreateAcmCertificate(scope, &props.InfraEnv),
+			Certificate: config.CreateAcmCertificate(stack, scope, &props.InfraEnv),
 			DomainName:  jsii.String(props.Domains.JobApiDomain.Url),
 		},
 	})
 
 	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{})
 
-	apis := jobApi.Root().AddResource(jsii.String("/test/{name}"), &apigateway.ResourceOptions{
+	apis := jobApi.Root().AddResource(jsii.String("jobs"), &apigateway.ResourceOptions{
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 	})
 	apis.AddMethod(jsii.String("GET"), integration, nil)
-
-	api := apis.AddResource(jsii.String("/getJobs"), &apigateway.ResourceOptions{
-		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
-	})
-
-	api.AddMethod(jsii.String("POST"), integration, nil)
 
 	hostedZone := config.GetHostedZone(stack, jsii.String("JobHostedZone"), props.InfraEnv)
 
