@@ -3,34 +3,28 @@ package main
 import (
 	"JobAPI/config"
 	"JobAPI/controller"
+	"JobAPI/logger"
 	"JobAPI/repository"
+	"JobAPI/routers"
 	"JobAPI/service"
-	"context"
-	"os"
-
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
-	"github.com/gin-gonic/gin"
 )
 
 var envVariables config.IConfig
 var jobDetailsRepoObj repository.IJobDetailsRepository
 var jobDetailsService service.IJobService
 var jobControllerObj controller.IJobController
-var ginLambda *ginadapter.GinLambda
+var logObj logger.ILogger
 
 func main() {
-	// initConfig()
-	// initRepository()
-	// intitServices()
-	// initControllers()
-	initRoutes()
+	initLogger()
+	initConfig()
+	initRepository()
+	intitServices()
+	initControllers()
+	routers.InitGinRouters(jobControllerObj, logObj).StartApp()
 }
-
-// Handler is the function that executes for every Request passed into the Lambda
-func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return ginLambda.ProxyWithContext(ctx, req)
+func initLogger() {
+	logObj = logger.InitConsoleLogger()
 }
 func initConfig() {
 	envVariables = config.GetConfig()
@@ -52,44 +46,7 @@ func intitServices() {
 }
 
 func initControllers() {
-	jobControllerObj = controller.InitJobController(jobDetailsService)
-}
-
-func initRoutes() {
-	ginEngine := gin.Default()
-
-	ginEngine.Use(CORSMiddleware())
-	clientGroup := ginEngine.Group("/jobs")
-	clientGroup.GET("/", func(c *gin.Context) {
-		c.JSON(200, map[string]string{"data": "Welcome"})
-	})
-	if IsLambda() {
-		ginLambda = ginadapter.New(ginEngine)
-		lambda.Start(Handler)
-	} else {
-		ginEngine.Run(":8080")
-	}
-
-}
-func IsLambda() bool {
-	lambdaTaskRoot := os.Getenv("LAMBDA_TASK_ROOT")
-	return lambdaTaskRoot != ""
-}
-
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
+	jobControllerObj = controller.InitJobController(jobDetailsService, logObj)
 }
 
 // func GetJobs(c *fiber.Ctx) error {

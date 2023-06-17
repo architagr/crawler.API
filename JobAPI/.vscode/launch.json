@@ -11,7 +11,12 @@
           "mode": "debug",
           "program": "${workspaceFolder}/main.go",
           "args": [], 
-          "showLog": true
+          "showLog": true,
+          "env": {
+           "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
+            "DatabaseName":"webscrapper",
+            "CollectionName":"jobDetails",
+          },
     }
     ]
 }

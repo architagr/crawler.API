@@ -13,6 +13,11 @@ import (
 	jsii "github.com/aws/jsii-runtime-go"
 )
 
+var (
+	GET_METHOD  = "GET"
+	POST_METHOD = "POST"
+)
+
 type JobAPILambdaStackProps struct {
 	config.CommonProps
 }
@@ -53,16 +58,14 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 		DomainName: &apigateway.DomainNameOptions{
 			Certificate: config.CreateAcmCertificate(stack, scope, &props.InfraEnv),
-			DomainName:  jsii.String(props.Domains.JobApiDomain.Url),
+			DomainName:  jsii.String(props.ApiBasePath),
 		},
 	})
 
 	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{})
 
-	apis := jobApi.Root().AddResource(jsii.String("jobs"), &apigateway.ResourceOptions{
-		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
-	})
-	apis.AddMethod(jsii.String("GET"), integration, nil)
+	baseApi := addResource("jobs", jobApi.Root(), []string{GET_METHOD}, integration)
+	addResource("healthCheck", baseApi, []string{GET_METHOD}, integration)
 
 	hostedZone := config.GetHostedZone(stack, jsii.String("JobHostedZone"), props.InfraEnv)
 
@@ -71,4 +74,17 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		Zone:       hostedZone,
 		Target:     route53.RecordTarget_FromAlias(route53targets.NewApiGateway(jobApi)),
 	})
+}
+
+func addResource(path string, api apigateway.IResource, methods []string, integration apigateway.LambdaIntegration) apigateway.IResource {
+	a := api.AddResource(jsii.String(path), &apigateway.ResourceOptions{
+		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
+	})
+	for _, method := range methods {
+		addMethod(method, a, integration)
+	}
+	return a
+}
+func addMethod(method string, api apigateway.IResource, integration apigateway.LambdaIntegration) {
+	api.AddMethod(jsii.String(method), integration, nil)
 }

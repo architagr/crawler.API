@@ -41,6 +41,7 @@ type Domain struct {
 }
 type InfraEnv struct {
 	StackNamePrefix string
+	ApiBasePath     string
 	Domains         Domain
 	CommonStackProps
 	HostedZoneId   string
@@ -77,11 +78,12 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 			HostedZoneId:    "Z069835117JUXI2FCKK2F",
 			CertificateArn:  "arn:aws:acm:ap-southeast-1:638580160310:certificate/39af19ea-f694-4524-83df-b043ba457278",
 			StackNamePrefix: "crawler-api",
+			ApiBasePath:     fmt.Sprintf("api.%s", baseDomain),
 			Domains: Domain{
 				BaseApi: baseDomain,
 				JobApiDomain: DomainDetails{
 					RecordName: "job-api",
-					Url:        fmt.Sprintf("job-api.%s", baseDomain),
+					Url:        fmt.Sprintf("api.%s", baseDomain),
 				},
 				LoginApiDomain: DomainDetails{
 					RecordName: "login-api",
