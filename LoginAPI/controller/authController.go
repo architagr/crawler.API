@@ -9,6 +9,7 @@ import (
 
 type IAuthController interface {
 	CreateUser(c *fiber.Ctx) error
+	AuthenticateUser(c *fiber.Ctx) error
 }
 
 type authController struct {
@@ -32,6 +33,18 @@ func (ctlr *authController) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
 	token, err := ctlr.service.CreateCognitoUser(filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+	}
+	return c.JSON(token)
+}
+
+func (ctlr *authController) AuthenticateUser(c *fiber.Ctx) error {
+	filter := new(models.LoginDetails)
+	if err := c.BodyParser(filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
+	}
+	token, err := ctlr.service.LoginUser(filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 	}

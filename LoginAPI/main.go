@@ -58,6 +58,7 @@ func initRoutes() {
 	}))
 
 	app.Post("/createuser", authControllerObj.CreateUser)
+	app.Post("/loginuser", authControllerObj.AuthenticateUser)
 
 	log.Fatal(app.Listen(":8082"))
 }
