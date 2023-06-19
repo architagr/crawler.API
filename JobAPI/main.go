@@ -3,27 +3,29 @@ package main
 import (
 	"JobAPI/config"
 	"JobAPI/controller"
+	"JobAPI/logger"
 	"JobAPI/repository"
+	"JobAPI/routers"
 	"JobAPI/service"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 var envVariables config.IConfig
 var jobDetailsRepoObj repository.IJobDetailsRepository
 var jobDetailsService service.IJobService
 var jobControllerObj controller.IJobController
+var logObj logger.ILogger
 
 func main() {
+	initLogger()
 	initConfig()
 	initRepository()
 	intitServices()
 	initControllers()
-	initRoutes()
+	routers.InitGinRouters(jobControllerObj, logObj).StartApp()
 }
-
+func initLogger() {
+	logObj = logger.InitConsoleLogger()
+}
 func initConfig() {
 	envVariables = config.GetConfig()
 }
@@ -44,22 +46,23 @@ func intitServices() {
 }
 
 func initControllers() {
-	jobControllerObj = controller.InitJobController(jobDetailsService)
+	jobControllerObj = controller.InitJobController(jobDetailsService, logObj)
 }
 
-func initRoutes() {
-	app := fiber.New()
+// func GetJobs(c *fiber.Ctx) error {
+// 	//var pageSize, pageNumber int64 = 10, 0 // todo: get this from querystring
 
-	app.Use(cors.New(cors.Config{
-		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin",
-		AllowOrigins:     "*",
-		AllowCredentials: true,
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-	}))
+// 	//get params from body
+// 	filter := new(models.JobFilter)
+// 	if err := c.BodyParser(filter); err != nil {
+// 		return err
+// 	}
+// 	_filter, err := json.Marshal(filter)
+// 	fmt.Println("filter: " + string(_filter))
 
-	app.Get("/test/:name", jobControllerObj.Test)
-
-	app.Post("/getJobs", jobControllerObj.GetJobs)
-
-	log.Fatal(app.Listen(":8080"))
-}
+// 	response, err := jobDetailsService.GetJobs(filter, filter.PageSize, filter.PageNumber)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return c.JSON(response)
+// }
