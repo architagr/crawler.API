@@ -58,7 +58,7 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 		DomainName: &apigateway.DomainNameOptions{
 			Certificate: config.CreateAcmCertificate(stack, scope, &props.InfraEnv),
-			DomainName:  jsii.String(props.ApiBasePath),
+			DomainName:  jsii.String(props.Domains.JobApiDomain.Url),
 		},
 	})
 

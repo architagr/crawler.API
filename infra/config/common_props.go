@@ -61,7 +61,7 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 		JobAPIDB: DatabaseModel{
 			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
 			dbname:           "webscrapper",
-			collectionName:   "test",
+			collectionName:   "jobDetails",
 		},
 		LoginAPIDB: DatabaseModel{
 			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
@@ -82,7 +82,7 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 			Domains: Domain{
 				BaseApi: baseDomain,
 				JobApiDomain: DomainDetails{
-					RecordName: "job-api",
+					RecordName: "api",
 					Url:        fmt.Sprintf("api.%s", baseDomain),
 				},
 				LoginApiDomain: DomainDetails{
