@@ -1,4 +1,4 @@
-package jobapi
+package loginservice
 
 import (
 	"infra/config"
@@ -16,39 +16,39 @@ var (
 	POST_METHOD = "POST"
 )
 
-type JobAPILambdaStackProps struct {
+type LoginAPILambdaStackProps struct {
 	config.CommonProps
 }
 
-func NewJobAPILambdaStack(scope constructs.Construct, id string, props *JobAPILambdaStackProps) (awscdk.Stack, apigateway.LambdaRestApi) {
+func NewLoginAPILambdaStack(scope constructs.Construct, id string, props *LoginAPILambdaStackProps) (awscdk.Stack, apigateway.LambdaRestApi) {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
-	jobRestApi := buildLambda(stack, scope, props)
-	return stack, jobRestApi
+	loginRestApi := buildLambda(stack, scope, props)
+	return stack, loginRestApi
 }
-func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILambdaStackProps) apigateway.LambdaRestApi {
+func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPILambdaStackProps) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.JobAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.JobAPIDB.GetDbName())
-	env["CollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
+	env["DbConnectionString"] = jsii.String(props.LoginAPIDB.GetConnectionString())
+	env["DatabaseName"] = jsii.String(props.LoginAPIDB.GetDbName())
+	env["LoginCollectionName"] = jsii.String(props.LoginAPIDB.GetCollectionName())
 	env["GIN_MODE"] = jsii.String("release")
 
-	jobFunction := lambda.NewFunction(stack, jsii.String("job-lambda"), &lambda.FunctionProps{
+	loginFunction := lambda.NewFunction(stack, jsii.String("login-lambda"), &lambda.FunctionProps{
 		Environment:  &env,
 		Runtime:      lambda.Runtime_GO_1_X(),
-		Handler:      jsii.String("JobAPI"),
-		Code:         lambda.Code_FromAsset(jsii.String("./../JobAPI/main.zip"), &awss3assets.AssetOptions{}),
-		FunctionName: jsii.String("job-lambda-fn"),
+		Handler:      jsii.String("LoginAPI"),
+		Code:         lambda.Code_FromAsset(jsii.String("./../LoginAPI/main.zip"), &awss3assets.AssetOptions{}),
+		FunctionName: jsii.String("login-lambda-fn"),
 	})
 
-	jobApi := apigateway.NewLambdaRestApi(stack, jsii.String("JobApi"), &apigateway.LambdaRestApiProps{
+	loginApi := apigateway.NewLambdaRestApi(stack, jsii.String("LoginApi"), &apigateway.LambdaRestApiProps{
 		DeployOptions:               props.Stage,
-		Handler:                     jobFunction,
-		RestApiName:                 jsii.String("JobRestApi"),
+		Handler:                     loginFunction,
+		RestApiName:                 jsii.String("LoginRestApi"),
 		Proxy:                       jsii.Bool(false),
 		Deploy:                      jsii.Bool(true),
 		DisableExecuteApiEndpoint:   jsii.Bool(false),
@@ -56,15 +56,17 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 	})
 
-	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{})
-	baseApi := jobApi.Root()
-	addMethod(GET_METHOD, baseApi, integration)
+	integration := apigateway.NewLambdaIntegration(loginFunction, &apigateway.LambdaIntegrationOptions{})
+
+	baseApi := loginApi.Root()
+
 	addResource("healthCheck", baseApi, []string{GET_METHOD}, integration)
-	return jobApi
+	addResource("login", baseApi, []string{POST_METHOD}, integration)
+	addResource("register", baseApi, []string{POST_METHOD}, integration)
+	return loginApi
 }
 
 func addResource(path string, api apigateway.IResource, methods []string, integration apigateway.LambdaIntegration) apigateway.IResource {
-
 	a := api.AddResource(jsii.String(path), &apigateway.ResourceOptions{
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 	})

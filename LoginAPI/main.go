@@ -3,27 +3,29 @@ package main
 import (
 	"LoginAPI/config"
 	"LoginAPI/controller"
+	"LoginAPI/logger"
 	"LoginAPI/repository"
+	"LoginAPI/routers"
 	"LoginAPI/service"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 var envVariables config.IConfig
 var authRepoObj repository.IAuthRepository
 var authServiceObj service.IAuthService
 var authControllerObj controller.IAuthController
+var logObj logger.ILogger
 
 func main() {
+	initLogger()
 	initConfig()
 	initRepository()
 	intitServices()
 	initControllers()
-	initRoutes()
+	routers.InitGinRouters(authControllerObj, logObj).StartApp()
 }
-
+func initLogger() {
+	logObj = logger.InitConsoleLogger()
+}
 func initConfig() {
 	envVariables = config.GetConfig()
 }
@@ -33,7 +35,7 @@ func initRepository() {
 		panic(err)
 	}
 
-	authRepoObj, err = repository.InitAuthRepo(mongodbConnection, envVariables.GetDatabaseName(), "authDetails")
+	authRepoObj, err = repository.InitAuthRepo(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetCollectionName())
 	if err != nil {
 		panic(err)
 	}
@@ -45,20 +47,4 @@ func intitServices() {
 
 func initControllers() {
 	authControllerObj = controller.InitAuthController(authServiceObj)
-}
-
-func initRoutes() {
-	app := fiber.New()
-
-	app.Use(cors.New(cors.Config{
-		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin",
-		AllowOrigins:     "*",
-		AllowCredentials: true,
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-	}))
-
-	app.Post("/createuser", authControllerObj.CreateUser)
-	app.Post("/loginuser", authControllerObj.AuthenticateUser)
-
-	log.Fatal(app.Listen(":8082"))
 }

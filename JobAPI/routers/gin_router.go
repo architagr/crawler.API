@@ -42,18 +42,18 @@ func InitGinRouters(jobController controller.IJobController, logObj logger.ILogg
 	ginMiddleware = getMiddlewares()
 	ginEngine := gin.Default()
 	registerInitialCommonMiddleware(ginEngine)
-	routerGroup := getInitialRouteGroup(ginEngine)
+	//routerGroup := getInitialRouteGroup(ginEngine)
 
-	routerGroup.GET("/healthCheck", func(c *gin.Context) {
+	ginEngine.GET("/healthCheck", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Jobs api is working",
 		})
 	})
 
-	routerGroup.GET("/", func(ginContext *gin.Context) {
+	ginEngine.GET("/", func(ginContext *gin.Context) {
 		var request models.JobFilter
 		if err := ginContext.ShouldBind(&request); err != nil {
-			logObj.Printf("wring query paramater %+v", err)
+			logObj.Printf("wrong query paramater %+v", err)
 		}
 		response, err := jobController.GetJobs(&request)
 		if err != nil {
