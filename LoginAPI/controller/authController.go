@@ -45,8 +45,12 @@ func (ctlr *authController) AuthenticateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
 	token, err := ctlr.service.LoginUser(filter)
+	var res = new(models.Response)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+	} else {
+		res.Status = "OK"
+		res.Data = token
 	}
-	return c.JSON(token)
+	return c.JSON(res)
 }

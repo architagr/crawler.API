@@ -50,7 +50,7 @@ func InitGinRouters(jobController controller.IJobController, logObj logger.ILogg
 		})
 	})
 
-	routerGroup.GET("/", func(ginContext *gin.Context) {
+	routerGroup.POST("/getJobs", func(ginContext *gin.Context) {
 		var request models.JobFilter
 		if err := ginContext.ShouldBind(&request); err != nil {
 			logObj.Printf("wring query paramater %+v", err)
