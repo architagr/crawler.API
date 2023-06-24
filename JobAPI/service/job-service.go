@@ -44,7 +44,7 @@ func (svc *jobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber in
 					},
 				},
 			}
-		} else {
+		} else if filter.Keywords != "" {
 			_filter = bson.M{
 				"$or": []bson.M{
 					{"title": filter.Keywords},
