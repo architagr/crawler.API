@@ -71,8 +71,7 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{
 		Proxy: jsii.Bool(true),
 	})
-
-	addMethod(GET_METHOD, jobApi.Root(), integration)
+	addResource("getJobs", jobApi.Root(), []string{POST_METHOD}, integration)
 
 	addResource("healthCheck", jobApi.Root(), []string{GET_METHOD}, integration)
 
