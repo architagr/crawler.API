@@ -1,11 +1,13 @@
 package loginservice
 
 import (
+	"fmt"
 	"infra/config"
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	lambda "github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	awss3assets "github.com/aws/aws-cdk-go/awscdk/v2/awss3assets"
 	constructs "github.com/aws/constructs-go/constructs/v10"
 	jsii "github.com/aws/jsii-runtime-go"
@@ -45,18 +47,30 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPI
 		FunctionName: jsii.String("login-lambda-fn"),
 	})
 
+	apiLogs := awslogs.NewLogGroup(stack, jsii.String("LoginApiLog"), &awslogs.LogGroupProps{
+		LogGroupName:  jsii.String(fmt.Sprintf("%s-LoginRestApiLog", props.CurrentEnv)),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+	})
+	deployOptions := &apigateway.StageOptions{
+		StageName:            jsii.String(props.CurrentEnv),
+		AccessLogDestination: apigateway.NewLogGroupLogDestination(apiLogs),
+		LoggingLevel:         apigateway.MethodLoggingLevel_ERROR,
+	}
+
 	loginApi := apigateway.NewLambdaRestApi(stack, jsii.String("LoginApi"), &apigateway.LambdaRestApiProps{
-		DeployOptions:               props.Stage,
-		Handler:                     loginFunction,
-		RestApiName:                 jsii.String("LoginRestApi"),
-		Proxy:                       jsii.Bool(false),
-		Deploy:                      jsii.Bool(true),
-		DisableExecuteApiEndpoint:   jsii.Bool(false),
-		EndpointTypes:               &[]apigateway.EndpointType{apigateway.EndpointType_EDGE},
-		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
+		DeployOptions:             deployOptions,
+		Handler:                   loginFunction,
+		RestApiName:               jsii.String("LoginRestApi"),
+		Proxy:                     jsii.Bool(false),
+		Deploy:                    jsii.Bool(true),
+		DisableExecuteApiEndpoint: jsii.Bool(false),
+		EndpointTypes:             &[]apigateway.EndpointType{apigateway.EndpointType_REGIONAL},
+		CloudWatchRole:            jsii.Bool(true),
 	})
 
-	integration := apigateway.NewLambdaIntegration(loginFunction, &apigateway.LambdaIntegrationOptions{})
+	integration := apigateway.NewLambdaIntegration(loginFunction, &apigateway.LambdaIntegrationOptions{
+		Proxy: jsii.Bool(true),
+	})
 
 	baseApi := loginApi.Root()
 

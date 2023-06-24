@@ -36,10 +36,13 @@ func NewDistributionStackLambdaStack(scope constructs.Construct, id string, prop
 	})
 
 	domain.AddBasePathMapping(props.LoginRestApi, &apigateway.BasePathMappingOptions{
-		BasePath: jsii.String("auth"),
+		BasePath:      jsii.String("auth"),
+		AttachToStage: jsii.Bool(true),
 	})
+
 	domain.AddBasePathMapping(props.JobsRestApi, &apigateway.BasePathMappingOptions{
-		BasePath: jsii.String("jobs"),
+		BasePath:      jsii.String("jobs"),
+		AttachToStage: jsii.Bool(true),
 	})
 	route53.NewARecord(stack, jsii.String("APIArecord"), &route53.ARecordProps{
 		RecordName: jsii.String("api"),

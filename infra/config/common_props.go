@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
@@ -73,25 +74,22 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 		InfraEnv: InfraEnv{
 			HostedZoneId: "Z069835117JUXI2FCKK2F",
 			//CertificateArn:  "arn:aws:acm:ap-southeast-1:638580160310:certificate/39af19ea-f694-4524-83df-b043ba457278",
-			CertificateArn:  "arn:aws:acm:us-east-1:638580160310:certificate/d70647bd-a714-4add-8d3b-787f55ab5213",
-			StackNamePrefix: "crawler-api",
-			ApiBasePath:     apiBasePath,
-			BaseDomain:      baseDomain,
-			CommonStackProps: CommonStackProps{
-				Stage: &apigateway.StageOptions{
-					StageName: jsii.String(currentEnv),
-				},
-			},
+			CertificateArn:   "arn:aws:acm:us-east-1:638580160310:certificate/d70647bd-a714-4add-8d3b-787f55ab5213",
+			StackNamePrefix:  "crawler-api",
+			ApiBasePath:      apiBasePath,
+			BaseDomain:       baseDomain,
+			CommonStackProps: CommonStackProps{},
 		},
 	}
 }
 
 func GetCorsPreflightOptions() *apigateway.CorsOptions {
 	return &apigateway.CorsOptions{
-		AllowOrigins:     apigateway.Cors_ALL_ORIGINS(),
-		AllowMethods:     apigateway.Cors_ALL_METHODS(),
-		AllowHeaders:     jsii.Strings("Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key"),
-		AllowCredentials: jsii.Bool(true),
+		AllowOrigins: apigateway.Cors_ALL_ORIGINS(),
+		// AllowMethods:     apigateway.Cors_ALL_METHODS(),
+		// AllowHeaders:     jsii.Strings("Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key"),
+		// AllowCredentials: jsii.Bool(true),
+		StatusCode: jsii.Number(http.StatusOK),
 	}
 }
 

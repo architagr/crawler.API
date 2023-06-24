@@ -1,11 +1,13 @@
 package jobapi
 
 import (
+	"fmt"
 	"infra/config"
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	lambda "github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	awss3assets "github.com/aws/aws-cdk-go/awscdk/v2/awss3assets"
 	constructs "github.com/aws/constructs-go/constructs/v10"
 	jsii "github.com/aws/jsii-runtime-go"
@@ -45,21 +47,35 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 		FunctionName: jsii.String("job-lambda-fn"),
 	})
 
+	apiLogs := awslogs.NewLogGroup(stack, jsii.String("jobApiLog"), &awslogs.LogGroupProps{
+		LogGroupName:  jsii.String(fmt.Sprintf("%s-JobRestApiLog", props.CurrentEnv)),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+	})
+	deployOptions := &apigateway.StageOptions{
+		StageName:            jsii.String(props.CurrentEnv),
+		AccessLogDestination: apigateway.NewLogGroupLogDestination(apiLogs),
+		LoggingLevel:         apigateway.MethodLoggingLevel_ERROR,
+	}
 	jobApi := apigateway.NewLambdaRestApi(stack, jsii.String("JobApi"), &apigateway.LambdaRestApiProps{
-		DeployOptions:               props.Stage,
+		DeployOptions:               deployOptions,
 		Handler:                     jobFunction,
 		RestApiName:                 jsii.String("JobRestApi"),
 		Proxy:                       jsii.Bool(false),
 		Deploy:                      jsii.Bool(true),
 		DisableExecuteApiEndpoint:   jsii.Bool(false),
-		EndpointTypes:               &[]apigateway.EndpointType{apigateway.EndpointType_EDGE},
+		EndpointTypes:               &[]apigateway.EndpointType{apigateway.EndpointType_REGIONAL},
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
+		CloudWatchRole:              jsii.Bool(true),
 	})
 
-	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{})
-	baseApi := jobApi.Root()
-	addMethod(GET_METHOD, baseApi, integration)
-	addResource("healthCheck", baseApi, []string{GET_METHOD}, integration)
+	integration := apigateway.NewLambdaIntegration(jobFunction, &apigateway.LambdaIntegrationOptions{
+		Proxy: jsii.Bool(true),
+	})
+
+	addMethod(GET_METHOD, jobApi.Root(), integration)
+
+	addResource("healthCheck", jobApi.Root(), []string{GET_METHOD}, integration)
+
 	return jobApi
 }
 

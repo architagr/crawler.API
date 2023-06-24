@@ -42,14 +42,14 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 	ginMiddleware = getMiddlewares()
 	ginEngine := gin.Default()
 	registerInitialCommonMiddleware(ginEngine, logObj)
-	// routerGroup := getInitialRouteGroup(ginEngine)
+	routerGroup := getInitialRouteGroup(ginEngine)
 
-	ginEngine.GET("/healthCheck", func(c *gin.Context) {
+	routerGroup.GET("/healthCheck", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Login api is working",
 		})
 	})
-	ginEngine.POST("/login", func(ginContext *gin.Context) {
+	routerGroup.POST("/login", func(ginContext *gin.Context) {
 		var loginRequest models.LoginDetails
 		if err := ginContext.ShouldBind(&loginRequest); err != nil {
 			logObj.Printf("wring request body %+v", err)
@@ -70,7 +70,7 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 			"token": token,
 		})
 	})
-	ginEngine.POST("/register", func(ginContext *gin.Context) {
+	routerGroup.POST("/register", func(ginContext *gin.Context) {
 		var loginRequest models.LoginDetails
 		if err := ginContext.ShouldBind(&loginRequest); err != nil {
 			logObj.Printf("wrong request body %+v", err)
