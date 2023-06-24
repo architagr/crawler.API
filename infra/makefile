@@ -12,9 +12,10 @@ endif
 
 build:
 	make -C ../JobAPI lambda-build
-
+	make -C ../LoginAPI lambda-build
 clear:
 	make -C ../JobAPI clear
+	make -C ../LoginAPI clear
 	
 bootstrap:
 	cdk bootstrap
