@@ -1,6 +1,6 @@
 accountId := $(shell aws sts get-caller-identity --query Account --output text --profile default)
 region := $(AWS_REGION)
-project := crawler_api
+project := crawlerapi
 env := $(ENV)
 ifndef region
 	region = ap-southeast-1

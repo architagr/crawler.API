@@ -31,15 +31,15 @@ type CommonStackProps struct {
 
 type InfraEnv struct {
 	CommonStackProps
-	StackNamePrefix string
-	ApiBasePath     string
-	BaseDomain      string
-	HostedZoneId    string
-	CertificateArn  string
+	ApiBasePath    string
+	BaseDomain     string
+	HostedZoneId   string
+	CertificateArn string
 }
 
 type CommonProps struct {
 	awscdk.StackProps
+	StackNamePrefix                 string
 	CurrentEnv                      string
 	JobAPIDB, LoginAPIDB, UserAPIDB DatabaseModel
 	InfraEnv
@@ -48,14 +48,16 @@ type CommonProps struct {
 const baseDomain = "hiringfunda.com"
 
 var currentEnv string = ""
+var project string = ""
 
 func GetCommonProps(app awscdk.App) *CommonProps {
-
-	apiBasePath := fmt.Sprintf("api.%s", baseDomain)
-
+	stackProps := env(app)
+	apiBasePath := getApiBasePath(currentEnv)
+	stackNamePrefix := fmt.Sprintf("%s-%s", currentEnv, project)
 	return &CommonProps{
-		StackProps: env(app),
-		CurrentEnv: currentEnv,
+		StackProps:      stackProps,
+		CurrentEnv:      currentEnv,
+		StackNamePrefix: stackNamePrefix,
 		JobAPIDB: DatabaseModel{
 			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
 			dbname:           "webscrapper",
@@ -75,7 +77,6 @@ func GetCommonProps(app awscdk.App) *CommonProps {
 			HostedZoneId: "Z069835117JUXI2FCKK2F",
 			//CertificateArn:  "arn:aws:acm:ap-southeast-1:638580160310:certificate/39af19ea-f694-4524-83df-b043ba457278",
 			CertificateArn:   "arn:aws:acm:us-east-1:638580160310:certificate/d70647bd-a714-4add-8d3b-787f55ab5213",
-			StackNamePrefix:  "crawler-api",
 			ApiBasePath:      apiBasePath,
 			BaseDomain:       baseDomain,
 			CommonStackProps: CommonStackProps{},
@@ -92,13 +93,16 @@ func GetCorsPreflightOptions() *apigateway.CorsOptions {
 		StatusCode: jsii.Number(http.StatusOK),
 	}
 }
+func getApiBasePath(env string) string {
+	return fmt.Sprintf("api-%s.%s", env, baseDomain)
+}
 
 // env determines the AWS environment (account+region) in which our stack is to
 // be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 func env(app awscdk.App) awscdk.StackProps {
 	accountId := fmt.Sprint(app.Node().TryGetContext(jsii.String("ACCOUNT_ID")))
 	region := fmt.Sprint(app.Node().TryGetContext(jsii.String("REGION")))
-	project := fmt.Sprint(app.Node().TryGetContext(jsii.String("PROJECT")))
+	project = fmt.Sprint(app.Node().TryGetContext(jsii.String("PROJECT")))
 	currentEnv = fmt.Sprint(app.Node().TryGetContext(jsii.String("ENV")))
 
 	// If unspecified, this stack will be "environment-agnostic".

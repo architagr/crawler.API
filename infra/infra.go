@@ -1,10 +1,11 @@
 package main
 
 import (
-	jobapi "infra/JobAPI"
+	"fmt"
 	"infra/config"
 	distributionstack "infra/distribution_stack"
-	loginservice "infra/login_service"
+	jobserviceappstack "infra/job_service_app_stack"
+	loginserviceappstack "infra/login_service_app_stack"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 
@@ -22,13 +23,13 @@ func main() {
 
 	props := config.GetCommonProps(app)
 
-	_, jobsRestApi := jobapi.NewJobAPILambdaStack(app, "JobAPIStack", &jobapi.JobAPILambdaStackProps{
+	_, jobsRestApi := jobserviceappstack.NewJobAPILambdaStack(app, fmt.Sprintf("%s-JobAPIStack", props.StackNamePrefix), &jobserviceappstack.JobAPILambdaStackProps{
 		CommonProps: *props,
 	})
-	_, loginRestApi := loginservice.NewLoginAPILambdaStack(app, "LoginAPIStack", &loginservice.LoginAPILambdaStackProps{
+	_, loginRestApi := loginserviceappstack.NewLoginAPILambdaStack(app, fmt.Sprintf("%s-LoginAPIStack", props.StackNamePrefix), &loginserviceappstack.LoginAPILambdaStackProps{
 		CommonProps: *props,
 	})
-	distributionstack.NewDistributionStackLambdaStack(app, "distributionStack", &distributionstack.DistributionStackambdaStackProps{
+	distributionstack.NewDistributionStackLambdaStack(app, fmt.Sprintf("%s-DistributionStack", props.StackNamePrefix), &distributionstack.DistributionStackambdaStackProps{
 		CommonProps:  *props,
 		LoginRestApi: loginRestApi,
 		JobsRestApi:  jobsRestApi,
