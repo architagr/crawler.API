@@ -61,14 +61,14 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 		}
 		token, err := authController.AuthenticateUser(&loginRequest)
 		if err != nil {
+
 			ginContext.Errors = append(ginContext.Errors, &gin.Error{
 				Err:  err,
 				Type: gin.ErrorTypePrivate,
 			})
+			return
 		}
-		ginContext.JSON(http.StatusOK, map[string]string{
-			"token": token,
-		})
+		ginContext.JSON(http.StatusOK, token)
 	})
 	routerGroup.POST("/register", func(ginContext *gin.Context) {
 		var loginRequest models.LoginDetails
@@ -86,10 +86,9 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 				Err:  err,
 				Type: gin.ErrorTypePrivate,
 			})
+			return
 		}
-		ginContext.JSON(http.StatusOK, map[string]string{
-			"token": token,
-		})
+		ginContext.JSON(http.StatusOK, token)
 	})
 	return &ginRouter{
 		ginEngine: ginEngine,

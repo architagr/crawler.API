@@ -1,12 +1,15 @@
 package main
 
 import (
+	"LoginAPI/aws"
 	"LoginAPI/config"
 	"LoginAPI/controller"
 	"LoginAPI/logger"
 	"LoginAPI/repository"
 	"LoginAPI/routers"
 	"LoginAPI/service"
+
+	cognitoInterface "github.com/aws/aws-sdk-go/service/cognitoidentityprovider/cognitoidentityprovideriface"
 )
 
 var envVariables config.IConfig
@@ -14,8 +17,10 @@ var authRepoObj repository.IAuthRepository
 var authServiceObj service.IAuthService
 var authControllerObj controller.IAuthController
 var logObj logger.ILogger
+var cognito cognitoInterface.CognitoIdentityProviderAPI
 
 func main() {
+	cognito = aws.GetCognitoService()
 	initLogger()
 	initConfig()
 	initRepository()
@@ -42,7 +47,7 @@ func initRepository() {
 }
 
 func intitServices() {
-	authServiceObj = service.InitAuthService(authRepoObj)
+	authServiceObj = service.InitAuthService(authRepoObj, envVariables, cognito, logObj)
 }
 
 func initControllers() {

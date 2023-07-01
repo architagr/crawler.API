@@ -1,13 +1,14 @@
 package controller
 
 import (
+	customerrors "LoginAPI/custom_errors"
 	"LoginAPI/models"
 	"LoginAPI/service"
 )
 
 type IAuthController interface {
-	CreateUser(newUser *models.LoginDetails) (string, error)
-	AuthenticateUser(loginRequest *models.LoginDetails) (string, error)
+	CreateUser(newUser *models.LoginDetails) (*models.Token, *customerrors.AuthError)
+	AuthenticateUser(loginRequest *models.LoginDetails) (*models.Token, *customerrors.AuthError)
 }
 
 type authController struct {
@@ -25,10 +26,10 @@ func InitAuthController(serviceObj service.IAuthService) IAuthController {
 	return authControllerObj
 }
 
-func (ctlr *authController) CreateUser(newUser *models.LoginDetails) (string, error) {
+func (ctlr *authController) CreateUser(newUser *models.LoginDetails) (*models.Token, *customerrors.AuthError) {
 	return ctlr.service.CreateCognitoUser(newUser)
 }
 
-func (ctlr *authController) AuthenticateUser(loginRequest *models.LoginDetails) (string, error) {
+func (ctlr *authController) AuthenticateUser(loginRequest *models.LoginDetails) (*models.Token, *customerrors.AuthError) {
 	return ctlr.service.LoginUser(loginRequest)
 }

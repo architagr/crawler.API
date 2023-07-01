@@ -6,13 +6,9 @@ import (
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	constructs "github.com/aws/constructs-go/constructs/v10"
-	jsii "github.com/aws/jsii-runtime-go"
-)
-
-var (
-	GET_METHOD  = "GET"
-	POST_METHOD = "POST"
+	"github.com/aws/jsii-runtime-go"
 )
 
 type LoginAPILambdaStackProps struct {
@@ -30,12 +26,18 @@ func NewLoginAPILambdaStack(scope constructs.Construct, id string, props *LoginA
 	return stack, loginRestApi
 }
 func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPILambdaStackProps) apigateway.LambdaRestApi {
+	userPool, userPoolClient := BuildUserPool(stack, *jsii.String("testUserPool"), &UserPoolLambdaStackProps{
+		CommonProps: props.CommonProps,
+	})
 
 	env := make(map[string]*string)
 	env["DbConnectionString"] = jsii.String(props.LoginAPIDB.GetConnectionString())
 	env["DatabaseName"] = jsii.String(props.LoginAPIDB.GetDbName())
 	env["LoginCollectionName"] = jsii.String(props.LoginAPIDB.GetCollectionName())
 	env["GIN_MODE"] = jsii.String("release")
+	env["UserPoolId"] = userPool.UserPoolId()
+	env["ClientId"] = userPoolClient.UserPoolClientId()
+	// env["ClientSecret"] = userPoolClient.UserPoolClientSecret().ToString()
 
 	loginFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
@@ -47,6 +49,16 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPI
 		Env:         env,
 		Stack:       stack,
 	})
+	// userPool.Grant(loginFunction)
+	loginFunction.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect: awsiam.Effect_ALLOW,
+		Actions: &[]*string{
+			jsii.String("cognito-idp:*"),
+		},
+		Resources: &[]*string{
+			userPool.UserPoolArn(),
+		},
+	}))
 	restApiProps := common.RestApiProps{
 		CommonProps: props.CommonProps,
 		Stack:       stack,
@@ -61,8 +73,9 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPI
 
 	baseApi := loginApi.Root()
 
-	common.AddResource("healthCheck", baseApi, []string{GET_METHOD}, integration)
-	common.AddResource("login", baseApi, []string{POST_METHOD}, integration)
-	common.AddResource("register", baseApi, []string{POST_METHOD}, integration)
+	common.AddResource("healthCheck", baseApi, []string{common.GET_METHOD}, integration)
+	common.AddResource("login", baseApi, []string{common.POST_METHOD}, integration)
+	common.AddResource("register", baseApi, []string{common.POST_METHOD}, integration)
+
 	return loginApi
 }

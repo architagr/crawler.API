@@ -8,12 +8,16 @@ type IConfig interface {
 	GetDatabaseConnectionString() string
 	GetDatabaseName() string
 	GetCollectionName() string
+	GetUserPoolId() string
+	GetClientId() string
 	IsLambda() bool
 }
 type Config struct {
 	databaseConnectionString string
 	databaseName             string
 	collectionName           string
+	userPoolId               string
+	clientId                 string
 	isLambda                 bool
 }
 
@@ -23,6 +27,8 @@ const (
 	databaseConnectionStringKey = "DbConnectionString"
 	databaseNameKey             = "DatabaseName"
 	collectionNameKey           = "LoginCollectionName"
+	userPoolIdKey               = "UserPoolId"
+	clientid                    = "ClientId"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
@@ -33,6 +39,8 @@ func InitConfig() {
 		databaseConnectionString: os.Getenv(databaseConnectionStringKey),
 		databaseName:             os.Getenv(databaseNameKey),
 		collectionName:           os.Getenv(collectionNameKey),
+		userPoolId:               os.Getenv(userPoolIdKey),
+		clientId:                 os.Getenv(clientid),
 		isLambda:                 ok,
 	}
 }
@@ -58,4 +66,11 @@ func (e *Config) GetCollectionName() string {
 
 func (e *Config) IsLambda() bool {
 	return e.isLambda
+}
+
+func (e *Config) GetUserPoolId() string {
+	return e.userPoolId
+}
+func (e *Config) GetClientId() string {
+	return e.clientId
 }

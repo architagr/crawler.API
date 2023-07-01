@@ -1,12 +1,24 @@
 package enums
 
-import "fmt"
+type ErrorCode int
 
-type ErrorCode string
+const genericErrorCode int = 1001
+const (
+	ERROR_CODE_REQUEST_PARAM ErrorCode = ErrorCode(iota + genericErrorCode)
+)
 
-var errorCodePrefix = "HF"
-var (
-	ERROR_CODE_REQUEST_PARAM ErrorCode = ErrorCode(fmt.Sprintf("%s1001", errorCodePrefix))
+const awsErrorCode int = 2001
+const (
+	ERROR_CODE_AWS ErrorCode = ErrorCode(iota + awsErrorCode)
+)
 
-	ERROR_CODE_AWS ErrorCode = ErrorCode(fmt.Sprintf("%s2001", errorCodePrefix))
+// auth error codes
+const initAuthErrorCode int = 3001
+const (
+	ERROR_CODE_AUTH_INVALID_CREDENTIALS ErrorCode = ErrorCode(iota + initAuthErrorCode)
+	ERROR_CODE_AUTH_PASSWORD_EXPIRED    ErrorCode = ErrorCode(iota + initAuthErrorCode)
+	ERROR_CODE_AUTH_CREATE_USER         ErrorCode = ErrorCode(iota + initAuthErrorCode)
+	ERROR_CODE_AUTH_UPDATE_PASSWORD     ErrorCode = ErrorCode(iota + initAuthErrorCode)
+	ERROR_CODE_AUTH_USERNAME_EXISTS     ErrorCode = ErrorCode(iota + initAuthErrorCode)
+	ERROR_CODE_AUTH_INVALID_PASSWORD    ErrorCode = ErrorCode(iota + initAuthErrorCode)
 )

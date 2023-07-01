@@ -16,6 +16,8 @@
                 "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
                 "DatabaseName":"webscrapper",
                 "LoginCollectionName":"authDetails",
+                "UserPoolId":"ap-southeast-1_2GIOsZ7ui",
+                "ClientId": "4l3bi0rt1blko86q659mo60g79"
             }
         }
     ]
