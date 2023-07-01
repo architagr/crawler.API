@@ -4,7 +4,6 @@ import (
 	localAwsPkg "LoginAPI/aws"
 	"LoginAPI/config"
 	customerrors "LoginAPI/custom_errors"
-	"LoginAPI/enums"
 	"LoginAPI/logger"
 	"LoginAPI/models"
 	"LoginAPI/repository"
@@ -15,8 +14,8 @@ import (
 )
 
 type IAuthService interface {
-	CreateCognitoUser(user *models.LoginDetails) (*models.Token, *customerrors.AuthError)
-	LoginUser(user *models.LoginDetails) (*models.Token, *customerrors.AuthError)
+	CreateCognitoUser(user *models.LoginDetails) (*models.Token, error)
+	LoginUser(user *models.LoginDetails) (*models.Token, error)
 }
 
 type authService struct {
@@ -43,7 +42,7 @@ func InitAuthService(repoObj repository.IAuthRepository,
 	return authServiceObj
 }
 
-func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Token, *customerrors.AuthError) {
+func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Token, error) {
 
 	//todo:  add statergies to use login type
 	// Create a new user
@@ -74,13 +73,13 @@ func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Toke
 		}
 		updatePasswordError := s.respondToNewPasswordChallenge(auth.Session, user.UserName, user.Password)
 		if updatePasswordError != nil {
-			return nil, customerrors.InitAuthError(enums.ERROR_CODE_AUTH_UPDATE_PASSWORD, err.Error())
+			return nil, &customerrors.UpdatePasswordException{}
 		}
 	}
 	return s.LoginUser(user)
 }
 
-func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Token, *customerrors.AuthError) {
+func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Token, error) {
 	// Authenticate the user
 	authInput := &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(s.env.GetUserPoolId()),
@@ -95,11 +94,7 @@ func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Toke
 	authOutput, err := s.cognito.AdminInitiateAuth(authInput)
 	if err != nil {
 		s.logObj.Printf("error in login user %+v\n", err)
-		return nil, customerrors.InitAuthError(enums.ERROR_CODE_AUTH_INVALID_CREDENTIALS, err.Error())
-	}
-	var customError *customerrors.AuthError = nil
-	if authOutput.ChallengeName != nil && *authOutput.ChallengeName == localAwsPkg.COGNITO_CHALLANGE_NAME_NEW_PASSWORD_REQUIRED {
-		customError = customerrors.InitAuthError(enums.ERROR_CODE_AUTH_PASSWORD_EXPIRED, "new password required")
+		return nil, &customerrors.InvalidCredentialException{}
 	}
 
 	response := new(models.Token)
@@ -113,17 +108,21 @@ func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Toke
 		response.TokenType = *authOutput.AuthenticationResult.TokenType
 		response.Expires = *authOutput.AuthenticationResult.ExpiresIn
 	}
-	return response, customError
+	if authOutput.ChallengeName != nil && *authOutput.ChallengeName == localAwsPkg.COGNITO_CHALLANGE_NAME_NEW_PASSWORD_REQUIRED {
+		return response, &customerrors.PasswordExpireException{}
+	}
+	return response, nil
 }
 
-func (s *authService) processCreateUserError(err error) *customerrors.AuthError {
-	if e, ok := err.(*cognitoidentityprovider.UsernameExistsException); ok {
-		return customerrors.InitAuthError(enums.ERROR_CODE_AUTH_USERNAME_EXISTS, e.Message())
+func (s *authService) processCreateUserError(err error) error {
+
+	if _, ok := err.(*cognitoidentityprovider.UsernameExistsException); ok {
+		return &customerrors.UsernameExistsException{}
 	}
-	if e, ok := err.(*cognitoidentityprovider.InvalidPasswordException); ok {
-		return customerrors.InitAuthError(enums.ERROR_CODE_AUTH_INVALID_PASSWORD, e.Message())
+	if _, ok := err.(*cognitoidentityprovider.InvalidPasswordException); ok {
+		return &customerrors.InvalidPasswordException{}
 	}
-	return customerrors.InitAuthError(enums.ERROR_CODE_AUTH_CREATE_USER, err.Error())
+	return &customerrors.CreateUserException{}
 }
 
 func (s *authService) respondToNewPasswordChallenge(session, username, newPassword string) error {

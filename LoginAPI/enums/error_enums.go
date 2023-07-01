@@ -4,7 +4,8 @@ type ErrorCode int
 
 const genericErrorCode int = 1001
 const (
-	ERROR_CODE_REQUEST_PARAM ErrorCode = ErrorCode(iota + genericErrorCode)
+	ERROR_CODE_REQUEST_PARAM          ErrorCode = ErrorCode(iota + genericErrorCode)
+	ERROR_CODE_REQUEST_INTERNAL_ERROR ErrorCode = ErrorCode(iota + genericErrorCode)
 )
 
 const awsErrorCode int = 2001

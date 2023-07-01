@@ -43,17 +43,7 @@ func (*ginMiddeleware) GetErrorHandler(logObj logger.ILogger) gin.HandlerFunc {
 				})
 				return
 			default:
-				switch err.Err.(type) {
-				case *customerrors.AWSError:
-					c.AbortWithStatusJSON(http.StatusInternalServerError, models.ErrorResponse{
-						ErrorCode: enums.ERROR_CODE_AWS,
-						Message:   "There is some issue in connecting to aws, please contact the Admin team.",
-					})
-					return
-				case *customerrors.AuthError:
-					handleAuthError(c, err.Err.(*customerrors.AuthError))
-					return
-				}
+				handleAuthError(c, err.Err)
 				return
 			}
 		}
@@ -61,39 +51,36 @@ func (*ginMiddeleware) GetErrorHandler(logObj logger.ILogger) gin.HandlerFunc {
 		c.Next()
 	}
 }
-func handleAuthError(c *gin.Context, err *customerrors.AuthError) {
-	switch err.GetCode() {
-	case enums.ERROR_CODE_AUTH_INVALID_CREDENTIALS:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "Invalid credentials",
-		})
-	case enums.ERROR_CODE_AUTH_PASSWORD_EXPIRED:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "Password expired, please update the password",
-		})
-	case enums.ERROR_CODE_AUTH_CREATE_USER:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "error while creating user",
-		})
-	case enums.ERROR_CODE_AUTH_UPDATE_PASSWORD:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "error while updating password",
-		})
-	case enums.ERROR_CODE_AUTH_USERNAME_EXISTS:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "username already eixst.",
-		})
-	case enums.ERROR_CODE_AUTH_INVALID_PASSWORD:
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-			ErrorCode: err.GetCode(),
-			Message:   "invalid password",
-		})
+func handleAuthError(c *gin.Context, err error) {
+	errorCode := enums.ERROR_CODE_REQUEST_INTERNAL_ERROR
+	status := http.StatusInternalServerError
+	switch err.(type) {
+	case *customerrors.AWSError:
+		status = http.StatusInternalServerError
+		errorCode = enums.ERROR_CODE_AWS
+	case *customerrors.InvalidCredentialException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_INVALID_CREDENTIALS
+	case *customerrors.InvalidPasswordException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_INVALID_PASSWORD
+	case *customerrors.PasswordExpireException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_PASSWORD_EXPIRED
+	case *customerrors.UpdatePasswordException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_UPDATE_PASSWORD
+	case *customerrors.CreateUserException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_CREATE_USER
+	case *customerrors.UsernameExistsException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_USERNAME_EXISTS
 	}
+	c.AbortWithStatusJSON(status, models.ErrorResponse{
+		ErrorCode: errorCode,
+		Message:   err.Error(),
+	})
 }
 func InitGinMiddelware() IMiddleware[gin.HandlerFunc] {
 	return &ginMiddeleware{}
