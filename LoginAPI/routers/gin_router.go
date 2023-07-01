@@ -7,6 +7,7 @@ import (
 	middlewarePkg "LoginAPI/middleware"
 	"LoginAPI/models"
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -29,12 +30,12 @@ var ginLambda *ginadapter.GinLambda
 func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return ginLambda.ProxyWithContext(ctx, req)
 }
-func (router *ginRouter) StartApp() {
+func (router *ginRouter) StartApp(port int) {
 	if router.env.IsLambda() {
 		ginLambda = ginadapter.New(router.ginEngine)
 		lambda.Start(Handler)
 	} else {
-		router.ginEngine.Run(":8080")
+		router.ginEngine.Run(fmt.Sprintf(":%d", port))
 	}
 }
 

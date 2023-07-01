@@ -1,5 +1,5 @@
 package routers
 
 type IRouter interface {
-	StartApp()
+	StartApp(port int)
 }
