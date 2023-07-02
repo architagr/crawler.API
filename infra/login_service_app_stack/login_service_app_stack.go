@@ -26,7 +26,7 @@ func NewLoginAPILambdaStack(scope constructs.Construct, id string, props *LoginA
 	return stack, loginRestApi
 }
 func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *LoginAPILambdaStackProps) apigateway.LambdaRestApi {
-	userPool, userPoolClient := BuildUserPool(stack, *jsii.String("testUserPool"), &UserPoolLambdaStackProps{
+	userPool, userPoolClient := BuildUserPool(stack, &UserPoolLambdaStackProps{
 		CommonProps: props.CommonProps,
 	})
 

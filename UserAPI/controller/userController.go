@@ -1,91 +1,68 @@
 package controller
 
 import (
+	customerrors "UserAPI/custom_errors"
+	"UserAPI/logger"
 	"UserAPI/models"
 	"UserAPI/service"
 	"path/filepath"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 type IUserController interface {
-	SaveUserProfile(c *fiber.Ctx) error
-	SaveUserImage(c *fiber.Ctx) error
-	GetUserProfile(c *fiber.Ctx) error
+	SaveUserProfile(userDetails *models.UserDetail) (*models.UserDetail, error)
+	SaveUserImage(updateAvatarRequest *models.UpdateAvatarRequest) error
+	GetUserProfile(email string) (*models.UserDetail, error)
 }
 
 type userController struct {
 	service service.IUserProfileService
+	logObj  logger.ILogger
 }
 
 var userControllerObj IUserController
 
-func InitUserController(serviceObj service.IUserProfileService) IUserController {
+func InitUserController(serviceObj service.IUserProfileService, logObj logger.ILogger) IUserController {
 	if userControllerObj == nil {
 		userControllerObj = &userController{
 			service: serviceObj,
+			logObj:  logObj,
 		}
 	}
 	return userControllerObj
 }
 
-func (ctlr *userController) SaveUserProfile(c *fiber.Ctx) error {
-	detail := new(models.UserDetail)
-	//get request param
-	err := c.BodyParser(detail)
-	if err != nil {
-		return err
-	}
-
-	result, err := ctlr.service.SaveUserProfile(detail)
-	if err != nil {
-		return err
-	}
-	return c.JSON(result)
+func (ctlr *userController) SaveUserProfile(userDetails *models.UserDetail) (*models.UserDetail, error) {
+	return ctlr.service.SaveUserProfile(userDetails)
 }
 
-func (ctrl *userController) SaveUserImage(c *fiber.Ctx) error {
-	form, err := c.MultipartForm()
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to retrieve the image"})
-	}
+func (ctrl *userController) SaveUserImage(updateAvatarRequest *models.UpdateAvatarRequest) error {
 
-	files := form.File["image"]
-	if len(files) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No image file found"})
-	}
-
-	file := files[0]
-	src, err := file.Open()
+	src, err := updateAvatarRequest.Image.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open the image"})
+		ctrl.logObj.Printf("error in opening file for %+v, error: %s", updateAvatarRequest, err)
+		return &customerrors.FileOpenException{}
 	}
 
 	defer src.Close()
 
-	userId := c.Params("id")
+	userId := updateAvatarRequest.Id
 
 	// Create a unique filename
-	ext := filepath.Ext(file.Filename)
+	ext := filepath.Ext(updateAvatarRequest.Image.Filename)
 	filename := userId + ext
 
-	ctrl.service.SaveImagetoAWS(src, filename, file.Size)
+	mimetype := updateAvatarRequest.Image.Header.Get("Content-Type")
+	ctrl.service.SaveImagetoAWS(src, userId, filename, mimetype, updateAvatarRequest.Image.Size)
 
-	return c.JSON(fiber.Map{"message": "Image uploaded successfully"})
+	return nil
 }
 
-func (ctrl *userController) GetUserProfile(c *fiber.Ctx) error {
-	email := c.Params("userId")
+func (ctrl *userController) GetUserProfile(email string) (*models.UserDetail, error) {
 
 	result, err := ctrl.service.GetUserProfile(email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	result.ImagePath, err = ctrl.service.GetUserImageURL(result.Id + ".png")
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(result)
+	return result, nil
 }

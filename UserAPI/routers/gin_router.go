@@ -1,12 +1,13 @@
 package routers
 
 import (
-	"LoginAPI/config"
-	"LoginAPI/controller"
-	"LoginAPI/logger"
-	middlewarePkg "LoginAPI/middleware"
-	"LoginAPI/models"
+	"UserAPI/config"
+	"UserAPI/controller"
+	"UserAPI/logger"
+	middlewarePkg "UserAPI/middleware"
+	"UserAPI/models"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -39,7 +40,7 @@ func (router *ginRouter) StartApp(port int) {
 	}
 }
 
-func InitGinRouters(authController controller.IAuthController, logObj logger.ILogger) IRouter {
+func InitGinRouters(userController controller.IUserController, logObj logger.ILogger) IRouter {
 	ginMiddleware = getMiddlewares()
 	ginEngine := gin.Default()
 	registerInitialCommonMiddleware(ginEngine, logObj)
@@ -47,50 +48,10 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 
 	routerGroup.GET("/healthCheck", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Login api is working",
+			"message": "User api is working",
 		})
 	})
-	routerGroup.POST("/login", func(ginContext *gin.Context) {
-		var loginRequest models.LoginDetails
-		if err := ginContext.ShouldBind(&loginRequest); err != nil {
-			logObj.Printf("wrong request body %+v", err)
-			ginContext.Errors = append(ginContext.Errors, &gin.Error{
-				Err:  err,
-				Type: gin.ErrorTypeBind,
-			})
-			return
-		}
-		token, err := authController.AuthenticateUser(&loginRequest)
-		if err != nil {
-
-			ginContext.Errors = append(ginContext.Errors, &gin.Error{
-				Err:  err,
-				Type: gin.ErrorTypePrivate,
-			})
-			return
-		}
-		ginContext.JSON(http.StatusOK, token)
-	})
-	routerGroup.POST("/register", func(ginContext *gin.Context) {
-		var loginRequest models.LoginDetails
-		if err := ginContext.ShouldBind(&loginRequest); err != nil {
-			logObj.Printf("wrong request body %+v", err)
-			ginContext.Errors = append(ginContext.Errors, &gin.Error{
-				Err:  err,
-				Type: gin.ErrorTypeBind,
-			})
-			return
-		}
-		token, err := authController.CreateUser(&loginRequest)
-		if err != nil {
-			ginContext.Errors = append(ginContext.Errors, &gin.Error{
-				Err:  err,
-				Type: gin.ErrorTypePrivate,
-			})
-			return
-		}
-		ginContext.JSON(http.StatusOK, token)
-	})
+	createUserProfileRoutes(routerGroup, userController, logObj)
 	return &ginRouter{
 		ginEngine: ginEngine,
 		env:       config.GetConfig(),
@@ -98,8 +59,85 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 	}
 }
 
+func createUserProfileRoutes(group *gin.RouterGroup, userController controller.IUserController, logObj logger.ILogger) {
+	userProfileGroup := group.Group("profile")
+
+	userProfileGroup.POST("/", func(ginContext *gin.Context) {
+		var userDetails models.UserDetail
+		if err := ginContext.ShouldBind(&userDetails); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		userData, err := userController.SaveUserProfile(&userDetails)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, userData)
+	})
+	userProfileGroup.PUT("/:id/image", func(ginContext *gin.Context) {
+
+		var updateAvatarRequest models.UpdateAvatarRequest
+		if err := ginContext.ShouldBind(&updateAvatarRequest); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		if err := ginContext.ShouldBindUri(&updateAvatarRequest); err != nil {
+			logObj.Printf("wrong request param %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		err := userController.SaveUserImage(&updateAvatarRequest)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, map[string]string{
+			"message": "image uploaded",
+		})
+	})
+
+	userProfileGroup.GET("/:username", func(ginContext *gin.Context) {
+		email, ok := ginContext.Params.Get("username")
+		if !ok {
+			logObj.Printf("username is required")
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  errors.New("username is required"),
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		userData, err := userController.GetUserProfile(email)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, userData)
+	})
+
+}
 func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
-	return ginEngine.Group("/auth")
+	return ginEngine.Group("/user")
 }
 func registerInitialCommonMiddleware(ginEngine *gin.Engine, logObj logger.ILogger) {
 	ginEngine.Use(ginMiddleware.GetErrorHandler(logObj))

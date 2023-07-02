@@ -1,5 +1,7 @@
 package models
 
+import "mime/multipart"
+
 type UserDetail struct {
 	Id            string `json:"_id" bson:"_id,omitempty"`
 	UserName      string `json:"username"`
@@ -15,4 +17,9 @@ type UserDetail struct {
 	Language      string `json:"language"`
 	Description   string `json:"description"`
 	ImagePath     string `json:"imagepath"`
+}
+
+type UpdateAvatarRequest struct {
+	Image *multipart.FileHeader `form:"image" binding:"required"`
+	Id    string                `uri:"id"`
 }

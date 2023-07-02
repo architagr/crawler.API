@@ -13,10 +13,13 @@ type UserPoolLambdaStackProps struct {
 	config.CommonProps
 }
 
-func BuildUserPool(stack awscdk.Stack, id string, props *UserPoolLambdaStackProps) (userPool awscognito.IUserPool,
+func BuildUserPool(stack awscdk.Stack, props *UserPoolLambdaStackProps) (userPool awscognito.IUserPool,
 	userPoolClient awscognito.IUserPoolClient) {
 
-	userPool = awscognito.NewUserPool(stack, jsii.String("UserPool"), &awscognito.UserPoolProps{
+	userPoolName := fmt.Sprintf("%s-userpool", props.StackNamePrefix)
+	userClientName := fmt.Sprintf("%s-userpoolclient", props.StackNamePrefix)
+
+	userPool = awscognito.NewUserPool(stack, &userPoolName, &awscognito.UserPoolProps{
 		SelfSignUpEnabled: jsii.Bool(true),
 		AutoVerify: &awscognito.AutoVerifiedAttrs{
 			Email: jsii.Bool(true),
@@ -37,27 +40,12 @@ func BuildUserPool(stack awscdk.Stack, id string, props *UserPoolLambdaStackProp
 		AccountRecovery: awscognito.AccountRecovery_PHONE_WITHOUT_MFA_AND_EMAIL,
 	})
 
-	userPoolClient = awscognito.NewUserPoolClient(stack, jsii.String("UserPoolClient"), &awscognito.UserPoolClientProps{
+	userPoolClient = awscognito.NewUserPoolClient(stack, &userClientName, &awscognito.UserPoolClientProps{
 		UserPool:       userPool,
 		GenerateSecret: jsii.Bool(false),
 		AuthFlows: &awscognito.AuthFlow{
 			AdminUserPassword: jsii.Bool(true),
 		},
 	})
-
-	// identityPool := awscognito.NewCfnIdentityPool(stack, jsii.String("IdentityPool"), &awscognito.CfnIdentityPoolProps{
-	// 	AllowUnauthenticatedIdentities: jsii.Bool(false),
-	// 	CognitoIdentityProviders: []map[string]string{
-	// 		{
-	// 			"clientId":     *userPoolClient.UserPoolClientId(),
-	// 			"providerName": *userPool.UserPoolProviderName(),
-	// 		},
-	// 	},
-	// })
-	fmt.Printf("User pool %s\n", *userPool.UserPoolId())
-	fmt.Printf("Client ID %s\n", *userPoolClient.UserPoolClientId())
-	// fmt.Printf("Client Secret %+v\n", userPoolClient.UserPoolClientSecret())
-
-	// fmt.Printf("Identity pool %s\n", identityPool.LogicalId())
 	return userPool, userPoolClient
 }
