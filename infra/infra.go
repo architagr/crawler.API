@@ -24,13 +24,13 @@ func main() {
 
 	props := config.GetCommonProps(app)
 
-	_, jobsRestApi := jobserviceappstack.NewJobAPILambdaStack(app, fmt.Sprintf("%s-JobAPIStack", props.StackNamePrefix), &jobserviceappstack.JobAPILambdaStackProps{
-		CommonProps: *props,
-	})
 	_, loginRestApi, userPool := loginserviceappstack.NewLoginAPILambdaStack(app, fmt.Sprintf("%s-LoginAPIStack", props.StackNamePrefix), &loginserviceappstack.LoginAPILambdaStackProps{
 		CommonProps: *props,
 	})
-
+	_, jobsRestApi := jobserviceappstack.NewJobAPILambdaStack(app, fmt.Sprintf("%s-JobAPIStack", props.StackNamePrefix), &jobserviceappstack.JobAPILambdaStackProps{
+		CommonProps: *props,
+		UserPoolArn: *userPool.UserPoolArn(),
+	})
 	_, userRestApi := userserviceappstack.NewUserAPILambdaStack(app, fmt.Sprintf("%s-UserAPIStack", props.StackNamePrefix), &userserviceappstack.UserAPILambdaStackProps{
 		CommonProps: *props,
 		UserPoolArn: *userPool.UserPoolArn(),

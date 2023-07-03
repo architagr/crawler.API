@@ -90,7 +90,6 @@ func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
 }
 func registerInitialCommonMiddleware(ginEngine *gin.Engine) {
 	ginEngine.Use(ginMiddleware.GetCorsMiddelware())
-	ginEngine.Use(ginMiddleware.AuthMiddleware())
 }
 func getMiddlewares() middlewarePkg.IMiddleware[gin.HandlerFunc] {
 	return middlewarePkg.InitGinMiddelware()
