@@ -23,6 +23,7 @@ func main() {
 	initControllers()
 	routers.InitGinRouters(authControllerObj, logObj).StartApp()
 }
+
 func initLogger() {
 	logObj = logger.InitConsoleLogger()
 }

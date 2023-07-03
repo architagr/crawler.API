@@ -9,6 +9,7 @@ import (
 
 type IJobController interface {
 	GetJobs(filter *models.JobFilter) (*models.GetJobResponse, error)
+	GetJobDetail(jobId string) (*models.JobDetails, error)
 }
 
 type jobController struct {
@@ -36,4 +37,8 @@ func InitJobController(jobServiceObj service.IJobService, logObj logger.ILogger)
 
 func (ctlr *jobController) GetJobs(filter *models.JobFilter) (*models.GetJobResponse, error) {
 	return ctlr.service.GetJobs(filter, filter.PageSize, filter.PageNumber)
+}
+
+func (ctlr *jobController) GetJobDetail(jobId string) (*models.JobDetails, error) {
+	return ctlr.service.GetJobDetail(jobId)
 }

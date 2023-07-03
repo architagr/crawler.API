@@ -34,7 +34,7 @@ func (router *ginRouter) StartApp() {
 		ginLambda = ginadapter.New(router.ginEngine)
 		lambda.Start(Handler)
 	} else {
-		router.ginEngine.Run(":8080")
+		router.ginEngine.Run(":8082")
 	}
 }
 
