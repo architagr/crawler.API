@@ -54,8 +54,8 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 
 	integration := common.BuildIntegration(&restApiProps)
 
-	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration)
+	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration, nil)
 
-	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration)
+	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration, nil)
 	return jobApi
 }

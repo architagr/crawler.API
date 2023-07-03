@@ -15,6 +15,7 @@ import (
 var (
 	GET_METHOD  = "GET"
 	POST_METHOD = "POST"
+	PUT_METHOD  = "PUT"
 )
 
 type RestApiProps struct {
@@ -69,15 +70,23 @@ func BuildIntegration(props *RestApiProps) apigateway.LambdaIntegration {
 		Proxy: jsii.Bool(true),
 	})
 }
-func AddResource(path string, api apigateway.IResource, methods []string, integration apigateway.LambdaIntegration) apigateway.IResource {
+func AddResource(path string, api apigateway.IResource, methods []string, integration apigateway.LambdaIntegration, authorizer apigateway.IAuthorizer) apigateway.IResource {
 	a := api.AddResource(jsii.String(path), &apigateway.ResourceOptions{
 		DefaultCorsPreflightOptions: config.GetCorsPreflightOptions(),
 	})
 	for _, method := range methods {
-		AddMethod(method, a, integration)
+		AddMethod(method, a, integration, authorizer)
 	}
 	return a
 }
-func AddMethod(method string, api apigateway.IResource, integration apigateway.LambdaIntegration) {
-	api.AddMethod(jsii.String(method), integration, nil)
+func AddMethod(method string, api apigateway.IResource, integration apigateway.LambdaIntegration, authorizer apigateway.IAuthorizer) {
+	var options *apigateway.MethodOptions = nil
+	if authorizer != nil {
+		options = &apigateway.MethodOptions{
+			Authorizer:          authorizer,
+			AuthorizationType:   apigateway.AuthorizationType_COGNITO,
+			AuthorizationScopes: jsii.Strings("aws.cognito.signin.user.admin"),
+		}
+	}
+	api.AddMethod(jsii.String(method), integration, options)
 }

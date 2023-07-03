@@ -19,6 +19,7 @@ type DistributionStackambdaStackProps struct {
 	config.CommonProps
 	LoginRestApi apigateway.LambdaRestApi
 	JobsRestApi  apigateway.LambdaRestApi
+	UserRestApi  apigateway.LambdaRestApi
 }
 
 func NewDistributionStackLambdaStack(scope constructs.Construct, id string, props *DistributionStackambdaStackProps) awscdk.Stack {
@@ -46,6 +47,12 @@ func NewDistributionStackLambdaStack(scope constructs.Construct, id string, prop
 		BasePath:      jsii.String("jobs"),
 		AttachToStage: jsii.Bool(true),
 	})
+
+	domain.AddBasePathMapping(props.UserRestApi, &apigateway.BasePathMappingOptions{
+		BasePath:      jsii.String("user"),
+		AttachToStage: jsii.Bool(true),
+	})
+
 	route53.NewARecord(stack, jsii.String(fmt.Sprintf("%s-APIArecord", props.StackNamePrefix)), &route53.ARecordProps{
 		RecordName: jsii.String(props.ApiBasePath),
 		Zone:       hostedZone,

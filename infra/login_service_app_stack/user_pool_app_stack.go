@@ -37,6 +37,7 @@ func BuildUserPool(stack awscdk.Stack, props *UserPoolLambdaStackProps) (userPoo
 			RequireUppercase:     jsii.Bool(true),
 			TempPasswordValidity: awscdk.Duration_Days(jsii.Number(14)),
 		},
+		RemovalPolicy:   awscdk.RemovalPolicy_DESTROY,
 		AccountRecovery: awscognito.AccountRecovery_PHONE_WITHOUT_MFA_AND_EMAIL,
 	})
 
@@ -45,6 +46,10 @@ func BuildUserPool(stack awscdk.Stack, props *UserPoolLambdaStackProps) (userPoo
 		GenerateSecret: jsii.Bool(false),
 		AuthFlows: &awscognito.AuthFlow{
 			AdminUserPassword: jsii.Bool(true),
+			UserPassword:      jsii.Bool(true),
+		},
+		SupportedIdentityProviders: &[]awscognito.UserPoolClientIdentityProvider{
+			awscognito.UserPoolClientIdentityProvider_COGNITO(),
 		},
 	})
 	return userPool, userPoolClient

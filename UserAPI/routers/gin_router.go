@@ -82,7 +82,7 @@ func createUserProfileRoutes(group *gin.RouterGroup, userController controller.I
 		}
 		ginContext.JSON(http.StatusOK, userData)
 	})
-	userProfileGroup.PUT("/:id/image", func(ginContext *gin.Context) {
+	userProfileGroup.PUT("/image/:id", func(ginContext *gin.Context) {
 
 		var updateAvatarRequest models.UpdateAvatarRequest
 		if err := ginContext.ShouldBind(&updateAvatarRequest); err != nil {
