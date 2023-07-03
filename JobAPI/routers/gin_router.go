@@ -65,6 +65,19 @@ func InitGinRouters(jobController controller.IJobController, logObj logger.ILogg
 
 	})
 
+	routerGroup.GET("/getJobDetail/:jobId", func(ginContext *gin.Context) {
+		jobId, _ := ginContext.Params.Get("jobId")
+		response, err := jobController.GetJobDetail(jobId)
+		if err != nil {
+			logObj.Printf("error in getting jobs %+v", err)
+			ginContext.AbortWithStatusJSON(http.StatusBadRequest, map[string]any{
+				"error": err.Error(),
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, response)
+	})
+
 	return &ginRouter{
 		ginEngine: ginEngine,
 		env:       config.GetConfig(),
@@ -77,6 +90,7 @@ func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
 }
 func registerInitialCommonMiddleware(ginEngine *gin.Engine) {
 	ginEngine.Use(ginMiddleware.GetCorsMiddelware())
+	ginEngine.Use(ginMiddleware.AuthMiddleware())
 }
 func getMiddlewares() middlewarePkg.IMiddleware[gin.HandlerFunc] {
 	return middlewarePkg.InitGinMiddelware()
