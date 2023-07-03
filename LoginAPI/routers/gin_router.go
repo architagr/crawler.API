@@ -7,6 +7,7 @@ import (
 	middlewarePkg "LoginAPI/middleware"
 	"LoginAPI/models"
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -29,12 +30,12 @@ var ginLambda *ginadapter.GinLambda
 func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return ginLambda.ProxyWithContext(ctx, req)
 }
-func (router *ginRouter) StartApp() {
+func (router *ginRouter) StartApp(port int) {
 	if router.env.IsLambda() {
 		ginLambda = ginadapter.New(router.ginEngine)
 		lambda.Start(Handler)
 	} else {
-		router.ginEngine.Run(":8082")
+		router.ginEngine.Run(fmt.Sprintf(":%d", port))
 	}
 }
 
@@ -52,7 +53,7 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 	routerGroup.POST("/login", func(ginContext *gin.Context) {
 		var loginRequest models.LoginDetails
 		if err := ginContext.ShouldBind(&loginRequest); err != nil {
-			logObj.Printf("wring request body %+v", err)
+			logObj.Printf("wrong request body %+v", err)
 			ginContext.Errors = append(ginContext.Errors, &gin.Error{
 				Err:  err,
 				Type: gin.ErrorTypeBind,
@@ -61,14 +62,14 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 		}
 		token, err := authController.AuthenticateUser(&loginRequest)
 		if err != nil {
+
 			ginContext.Errors = append(ginContext.Errors, &gin.Error{
 				Err:  err,
 				Type: gin.ErrorTypePrivate,
 			})
+			return
 		}
-		ginContext.JSON(http.StatusOK, map[string]string{
-			"token": token,
-		})
+		ginContext.JSON(http.StatusOK, token)
 	})
 	routerGroup.POST("/register", func(ginContext *gin.Context) {
 		var loginRequest models.LoginDetails
@@ -86,10 +87,9 @@ func InitGinRouters(authController controller.IAuthController, logObj logger.ILo
 				Err:  err,
 				Type: gin.ErrorTypePrivate,
 			})
+			return
 		}
-		ginContext.JSON(http.StatusOK, map[string]string{
-			"token": token,
-		})
+		ginContext.JSON(http.StatusOK, token)
 	})
 	return &ginRouter{
 		ginEngine: ginEngine,

@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	customerrors "LoginAPI/custom_errors"
 	"LoginAPI/enums"
-	"LoginAPI/errors"
 	"LoginAPI/logger"
 	"LoginAPI/models"
 	"net/http"
@@ -41,20 +41,46 @@ func (*ginMiddeleware) GetErrorHandler(logObj logger.ILogger) gin.HandlerFunc {
 					ErrorCode: enums.ERROR_CODE_REQUEST_PARAM,
 					Message:   "Request params are not valid",
 				})
+				return
 			default:
-				switch err.Err.(type) {
-				case *errors.AWSError:
-					c.AbortWithStatusJSON(http.StatusInternalServerError, models.ErrorResponse{
-						ErrorCode: enums.ERROR_CODE_AWS,
-						Message:   "There is some issue in connecting to aws, please contact the Admin team.",
-					})
-				}
-
+				handleAuthError(c, err.Err)
+				return
 			}
 		}
 
 		c.Next()
 	}
+}
+func handleAuthError(c *gin.Context, err error) {
+	errorCode := enums.ERROR_CODE_REQUEST_INTERNAL_ERROR
+	status := http.StatusInternalServerError
+	switch err.(type) {
+	case *customerrors.AWSError:
+		status = http.StatusInternalServerError
+		errorCode = enums.ERROR_CODE_AWS
+	case *customerrors.InvalidCredentialException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_INVALID_CREDENTIALS
+	case *customerrors.InvalidPasswordException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_INVALID_PASSWORD
+	case *customerrors.PasswordExpireException:
+		status = http.StatusUnauthorized
+		errorCode = enums.ERROR_CODE_AUTH_PASSWORD_EXPIRED
+	case *customerrors.UpdatePasswordException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_UPDATE_PASSWORD
+	case *customerrors.CreateUserException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_CREATE_USER
+	case *customerrors.UsernameExistsException:
+		status = http.StatusBadRequest
+		errorCode = enums.ERROR_CODE_AUTH_USERNAME_EXISTS
+	}
+	c.AbortWithStatusJSON(status, models.ErrorResponse{
+		ErrorCode: errorCode,
+		Message:   err.Error(),
+	})
 }
 func InitGinMiddelware() IMiddleware[gin.HandlerFunc] {
 	return &ginMiddeleware{}

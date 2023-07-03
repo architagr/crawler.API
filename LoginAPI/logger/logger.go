@@ -16,7 +16,7 @@ func (l *consoleLogger) Printf(format string, v ...interface{}) {
 
 func InitConsoleLogger() ILogger {
 	logObj := log.Default()
-	logObj.SetPrefix(":jobAPI: ")
+	logObj.SetPrefix(":LoginAPI: ")
 	logObj.SetFlags(log.Lmicroseconds | log.Lmsgprefix)
 
 	return &consoleLogger{

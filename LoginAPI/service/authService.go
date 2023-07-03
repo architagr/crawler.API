@@ -1,65 +1,55 @@
 package service
 
 import (
+	localAwsPkg "LoginAPI/aws"
+	"LoginAPI/config"
+	customerrors "LoginAPI/custom_errors"
+	"LoginAPI/logger"
 	"LoginAPI/models"
 	"LoginAPI/repository"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-
-	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
-)
-
-const (
-	region         = "ap-south-1" // Update with your desired region
-	userPoolID     = "ap-south-1_PsMRSTJ4p"
-	clientID       = "1bj3i8ln4lnlei1ldg0dcg0efi"
-	clientSecret   = "dhncbj3hti4j6gd4a9iil239lb2mj2495p9im6r7f3ekovifj52"
-	identityPoolID = "ap-south-1:b92ae7d3-c02a-4988-b56d-804c3c5df777"
+	cognitoInterface "github.com/aws/aws-sdk-go/service/cognitoidentityprovider/cognitoidentityprovideriface"
 )
 
 type IAuthService interface {
-	CreateCognitoUser(user *models.LoginDetails) (string, error)
-	LoginUser(user *models.LoginDetails) (string, error)
+	CreateCognitoUser(user *models.LoginDetails) (*models.Token, error)
+	LoginUser(user *models.LoginDetails) (*models.Token, error)
 }
 
 type authService struct {
-	repo repository.IAuthRepository
+	repo    repository.IAuthRepository
+	env     config.IConfig
+	cognito cognitoInterface.CognitoIdentityProviderAPI
+	logObj  logger.ILogger
 }
 
 var authServiceObj IAuthService
 
-func InitAuthService(repoObj repository.IAuthRepository) IAuthService {
+func InitAuthService(repoObj repository.IAuthRepository,
+	env config.IConfig,
+	cognito cognitoInterface.CognitoIdentityProviderAPI,
+	logObj logger.ILogger) IAuthService {
 	if authServiceObj == nil {
 		authServiceObj = &authService{
-			repo: repoObj,
+			repo:    repoObj,
+			env:     env,
+			cognito: cognito,
+			logObj:  logObj,
 		}
 	}
 	return authServiceObj
 }
 
-func (s *authService) CreateCognitoUser(user *models.LoginDetails) (string, error) {
-	// Create a session
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
-	)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
-	}
+func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Token, error) {
 
-	// Create a Cognito Identity Provider client
-	cognitoClient := cognitoidentityprovider.New(sess)
-
+	//todo:  add statergies to use login type
 	// Create a new user
 	createUserInput := &cognitoidentityprovider.AdminCreateUserInput{
-		UserPoolId:        aws.String(userPoolID),
+		UserPoolId:        aws.String(s.env.GetUserPoolId()),
 		Username:          aws.String(user.UserName),
+		MessageAction:     aws.String(localAwsPkg.MESSAGE_ACTION_SUPRESS),
 		TemporaryPassword: aws.String(user.Password), // Provide a temporary password
 		UserAttributes: []*cognitoidentityprovider.AttributeType{
 			{
@@ -69,145 +59,90 @@ func (s *authService) CreateCognitoUser(user *models.LoginDetails) (string, erro
 		},
 	}
 
-	_, err = cognitoClient.AdminCreateUser(createUserInput)
+	userData, err := s.cognito.AdminCreateUser(createUserInput)
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		s.logObj.Printf("error in creating user (%s), error: %+v", user.UserName, err)
+		return nil, s.processCreateUserError(err)
 	}
+	s.logObj.Printf("User (%s) created successfully \n", *userData.User.Username)
 
-	fmt.Println("User created successfully")
+	if *userData.User.UserStatus == localAwsPkg.USER_STATUS_FORCE_CHANGE_PASSWORD {
+		auth, err := s.LoginUser(user)
+		if auth == nil && err != nil {
+			return nil, err
+		}
+		updatePasswordError := s.respondToNewPasswordChallenge(auth.Session, user.UserName, user.Password)
+		if updatePasswordError != nil {
+			return nil, &customerrors.UpdatePasswordException{}
+		}
+	}
+	return s.LoginUser(user)
+}
 
-	secretHash := calculateSecretHash(user.UserName, clientID, clientSecret)
-
+func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Token, error) {
 	// Authenticate the user
 	authInput := &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId: aws.String(userPoolID),
-		ClientId:   aws.String(clientID),
-		AuthFlow:   aws.String("ADMIN_USER_PASSWORD_AUTH"),
+		UserPoolId: aws.String(s.env.GetUserPoolId()),
+		ClientId:   aws.String(s.env.GetClientId()),
+		AuthFlow:   aws.String(localAwsPkg.AUTH_FLOW_ADMIN_USER_PASSWORD_AUTH),
 		AuthParameters: map[string]*string{
-			"USERNAME":    aws.String(user.UserName),
-			"PASSWORD":    aws.String(user.Password), // Provide the temporary password here
-			"SECRET_HASH": aws.String(secretHash),
+			"USERNAME": aws.String(loginDetails.UserName),
+			"PASSWORD": aws.String(loginDetails.Password), // Provide the temporary password here
 		},
 	}
 
-	authOutput, err := cognitoClient.AdminInitiateAuth(authInput)
+	authOutput, err := s.cognito.AdminInitiateAuth(authInput)
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		s.logObj.Printf("error in login user %+v\n", err)
+		return nil, &customerrors.InvalidCredentialException{}
 	}
 
-	if authOutput.ChallengeName != nil {
-		fmt.Println("Challenge received:", *authOutput.ChallengeName)
-
-		if *authOutput.ChallengeName == "NEW_PASSWORD_REQUIRED" {
-			// Respond to the NEW_PASSWORD_REQUIRED challenge
-			err := respondToNewPasswordChallenge(cognitoClient, *authOutput.Session, user.UserName, user.Password, secretHash)
-			if err != nil {
-				fmt.Println(err)
-				return "", err
-			}
-		} else {
-			log.Fatalf("Unhandled challenge: %s", *authOutput.ChallengeName)
-		}
-	} else {
-		fmt.Println("User authenticated successfully")
-		fmt.Println("Access Token:", *authOutput.AuthenticationResult.AccessToken)
-		fmt.Println("Refresh Token:", *authOutput.AuthenticationResult.RefreshToken)
+	response := new(models.Token)
+	if authOutput.Session != nil {
+		response.Session = *authOutput.Session
 	}
 
-	fmt.Println("User authenticated successfully")
-	fmt.Println("Access Token:", *authOutput.AuthenticationResult.AccessToken)
-	token := *authOutput.AuthenticationResult.AccessToken
-	return token, nil
+	if authOutput.AuthenticationResult != nil {
+		response.Token = *authOutput.AuthenticationResult.AccessToken
+		response.RefreshToken = *authOutput.AuthenticationResult.RefreshToken
+		response.TokenType = *authOutput.AuthenticationResult.TokenType
+		response.Expires = *authOutput.AuthenticationResult.ExpiresIn
+	}
+	if authOutput.ChallengeName != nil && *authOutput.ChallengeName == localAwsPkg.COGNITO_CHALLANGE_NAME_NEW_PASSWORD_REQUIRED {
+		return response, &customerrors.PasswordExpireException{}
+	}
+	return response, nil
 }
 
-func (s *authService) LoginUser(user *models.LoginDetails) (string, error) {
-	// Create a session
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
-	)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+func (s *authService) processCreateUserError(err error) error {
+
+	if _, ok := err.(*cognitoidentityprovider.UsernameExistsException); ok {
+		return &customerrors.UsernameExistsException{}
 	}
-
-	// Create a Cognito Identity Provider client
-	cognitoClient := cognitoidentityprovider.New(sess)
-
-	secretHash := calculateSecretHash(user.UserName, clientID, clientSecret)
-
-	// Authenticate the user
-	authInput := &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId: aws.String(userPoolID),
-		ClientId:   aws.String(clientID),
-		AuthFlow:   aws.String("ADMIN_USER_PASSWORD_AUTH"),
-		AuthParameters: map[string]*string{
-			"USERNAME":    aws.String(user.UserName),
-			"PASSWORD":    aws.String(user.Password), // Provide the temporary password here
-			"SECRET_HASH": aws.String(secretHash),
-		},
+	if _, ok := err.(*cognitoidentityprovider.InvalidPasswordException); ok {
+		return &customerrors.InvalidPasswordException{}
 	}
-
-	authOutput, err := cognitoClient.AdminInitiateAuth(authInput)
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-
-	if authOutput.ChallengeName != nil {
-		fmt.Println("Challenge received:", *authOutput.ChallengeName)
-
-		if *authOutput.ChallengeName == "NEW_PASSWORD_REQUIRED" {
-			// Respond to the NEW_PASSWORD_REQUIRED challenge
-			err := respondToNewPasswordChallenge(cognitoClient, *authOutput.Session, user.UserName, user.Password, secretHash)
-			if err != nil {
-				fmt.Println(err)
-				return "", err
-			}
-		} else {
-			log.Fatalf("Unhandled challenge: %s", *authOutput.ChallengeName)
-		}
-	} else {
-		fmt.Println("User authenticated successfully")
-		fmt.Println("Access Token:", *authOutput.AuthenticationResult.AccessToken)
-		fmt.Println("Refresh Token:", *authOutput.AuthenticationResult.RefreshToken)
-	}
-
-	fmt.Println("User authenticated successfully")
-	fmt.Println("Access Token:", *authOutput.AuthenticationResult.AccessToken)
-	token := *authOutput.AuthenticationResult.AccessToken
-	return token, nil
+	return &customerrors.CreateUserException{}
 }
 
-func calculateSecretHash(username, clientID, clientSecret string) string {
-	msg := username + clientID
-	hmac := hmac.New(sha256.New, []byte(clientSecret))
-	hmac.Write([]byte(msg))
-	secretHash := base64.StdEncoding.EncodeToString(hmac.Sum(nil))
-	return secretHash
-}
-
-func respondToNewPasswordChallenge(client *cognitoidentityprovider.CognitoIdentityProvider, session, username, newPassword, secretHash string) error {
+func (s *authService) respondToNewPasswordChallenge(session, username, newPassword string) error {
 	challengeResponse := &cognitoidentityprovider.AdminRespondToAuthChallengeInput{
-		UserPoolId:    aws.String(userPoolID),
-		ClientId:      aws.String(clientID),
-		ChallengeName: aws.String("NEW_PASSWORD_REQUIRED"),
+		UserPoolId:    aws.String(s.env.GetUserPoolId()),
+		ClientId:      aws.String(s.env.GetClientId()),
+		ChallengeName: aws.String(localAwsPkg.COGNITO_CHALLANGE_NAME_NEW_PASSWORD_REQUIRED),
 		Session:       aws.String(session),
 		ChallengeResponses: map[string]*string{
 			"USERNAME":     aws.String(username),
 			"NEW_PASSWORD": aws.String(newPassword),
-			"SECRET_HASH":  aws.String(secretHash),
 		},
 	}
 
-	_, err := client.AdminRespondToAuthChallenge(challengeResponse)
+	_, err := s.cognito.AdminRespondToAuthChallenge(challengeResponse)
 	if err != nil {
-		fmt.Println(err)
+		s.logObj.Printf("Error when updating password %+v\n", err)
 		return err
 	}
 
-	fmt.Println("User authentication completed successfully")
-	fmt.Println("New password set successfully")
+	s.logObj.Printf("New password set successfully\n")
 	return nil
 }

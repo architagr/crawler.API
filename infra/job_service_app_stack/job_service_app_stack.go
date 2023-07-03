@@ -1,17 +1,20 @@
 package jobserviceappservice
 
 import (
+	"fmt"
 	"infra/common"
 	"infra/config"
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awscognito"
 	constructs "github.com/aws/constructs-go/constructs/v10"
 	jsii "github.com/aws/jsii-runtime-go"
 )
 
 type JobAPILambdaStackProps struct {
 	config.CommonProps
+	UserPoolArn string
 }
 
 func NewJobAPILambdaStack(scope constructs.Construct, id string, props *JobAPILambdaStackProps) (awscdk.Stack, apigateway.LambdaRestApi) {
@@ -51,11 +54,27 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 	}
 
 	jobApi := common.BuildRestApi(&restApiProps)
-
+	authorizer := buildCognitoAuthorizer(stack, props)
 	integration := common.BuildIntegration(&restApiProps)
 
-	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration)
+	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration, authorizer)
+	common.AddResource("{jobId}",
+		common.AddResource("getJobDetail", jobApi.Root(), []string{}, integration, authorizer),
+		[]string{common.GET_METHOD}, integration, authorizer)
 
-	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration)
+	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration, nil)
 	return jobApi
+}
+
+func buildCognitoAuthorizer(stack awscdk.Stack, props *JobAPILambdaStackProps) apigateway.IAuthorizer {
+	userPool := awscognito.UserPool_FromUserPoolArn(stack, jsii.String(fmt.Sprintf("%s-import-userpool-jobapi", props.StackNamePrefix)), &props.UserPoolArn)
+
+	return apigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String(fmt.Sprintf("%s-cognito-authorizer-jobapi", props.StackNamePrefix)), &apigateway.CognitoUserPoolsAuthorizerProps{
+		CognitoUserPools: &[]awscognito.IUserPool{
+			userPool,
+		},
+		IdentitySource: jsii.String("method.request.header.Authorization"),
+		AuthorizerName: jsii.String(fmt.Sprintf("%s-cognito-authorizer-jobapi", props.StackNamePrefix)),
+	})
+
 }

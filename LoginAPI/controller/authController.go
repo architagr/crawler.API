@@ -6,8 +6,8 @@ import (
 )
 
 type IAuthController interface {
-	CreateUser(newUser *models.LoginDetails) (string, error)
-	AuthenticateUser(loginRequest *models.LoginDetails) (string, error)
+	CreateUser(newUser *models.LoginDetails) (*models.Token, error)
+	AuthenticateUser(loginRequest *models.LoginDetails) (*models.Token, error)
 }
 
 type authController struct {
@@ -25,10 +25,10 @@ func InitAuthController(serviceObj service.IAuthService) IAuthController {
 	return authControllerObj
 }
 
-func (ctlr *authController) CreateUser(newUser *models.LoginDetails) (string, error) {
+func (ctlr *authController) CreateUser(newUser *models.LoginDetails) (*models.Token, error) {
 	return ctlr.service.CreateCognitoUser(newUser)
 }
 
-func (ctlr *authController) AuthenticateUser(loginRequest *models.LoginDetails) (string, error) {
+func (ctlr *authController) AuthenticateUser(loginRequest *models.LoginDetails) (*models.Token, error) {
 	return ctlr.service.LoginUser(loginRequest)
 }

@@ -1,87 +1,86 @@
 package service
 
 import (
+	customerrors "UserAPI/custom_errors"
+	"UserAPI/filters"
+	"UserAPI/logger"
 	"UserAPI/models"
 	"UserAPI/repository"
-	"errors"
-	"fmt"
 	"mime/multipart"
-	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type IUserProfileService interface {
-	SaveUserProfile(user *models.UserDetail) (string, error)
+	SaveUserProfile(user *models.UserDetail) (*models.UserDetail, error)
 	GetUserProfile(username string) (*models.UserDetail, error)
-	SaveImagetoAWS(_file multipart.File, fileName string, size int64)
+	SaveImagetoAWS(_file multipart.File, userId, fileName, mimetype string, size int64) error
 	GetUserImageURL(filename string) (string, error)
 }
 
 type userProfileService struct {
-	repo repository.IUserRepository
+	repo      repository.IUserRepository
+	logObj    logger.ILogger
+	s3Service IS3Service
 }
 
 var userServiceObj IUserProfileService
 
-func InitUserService(repoObj repository.IUserRepository) IUserProfileService {
+func InitUserService(repoObj repository.IUserRepository, s3Service IS3Service, logObj logger.ILogger) IUserProfileService {
 	if userServiceObj == nil {
 		userServiceObj = &userProfileService{
-			repo: repoObj,
+			repo:      repoObj,
+			s3Service: s3Service,
+			logObj:    logObj,
 		}
 	}
 	return userServiceObj
 }
 
-func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (string, error) {
+func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.UserDetail, error) {
 	existingUser := new(models.UserDetail)
-	var err error
-	existingUser, err = s.repo.GetById(user.Id)
+	existingUser, _ = s.repo.GetById(user.Id)
 
 	//check if email id or mobile already exists in other profiles
 	objectId, err := primitive.ObjectIDFromHex(user.Id)
+	if err != nil {
+		s.logObj.Printf("error while converting id to hex %s, error: %s\n", user.Id, err.Error())
+		return nil, &customerrors.GetUserException{}
+	}
+	var filter filters.IFilter = nil
 	_filter := bson.M{}
-	if user == nil {
-		_filter = bson.M{}
-	} else {
+	if user != nil {
 		if user.Email != "" {
-			_filter = bson.M{"email": user.Email}
+			filter = filters.InitEmailFilter(filter, filters.AND, filters.EQUAL, user.Email)
 		}
 		if user.Phone != "" {
-			_filter = bson.M{
-				"$or": []bson.M{
-					_filter,
-					bson.M{"phone": user.Phone},
-				},
-			}
+			filter = filters.InitPhoneFilter(filter, filters.OR, filters.EQUAL, user.Phone)
 		}
 		if user.Id != "" {
-			_filter = bson.M{
-				"$and": []bson.M{
-					_filter,
-					bson.M{"_id": bson.M{"$ne": objectId}},
-				},
-			}
+			filter = filters.InitIdFilter(filter, filters.AND, filters.NOT_EQUAL, objectId)
 		}
+	}
+	if filter != nil {
+		_filter = filter.Build()
 	}
 	userList, err := s.repo.Get(_filter, 1, 1)
 	if err != nil {
-		return "", err
+		s.logObj.Printf("error while getting user from db using filter %+v, error: %s\n", _filter, err.Error())
+		return nil, &customerrors.GetUserException{}
 	} else if len(userList) > 0 {
-		return "", errors.New("Email Id or User name already available")
+		s.logObj.Printf("user with same email, phone exist")
+		return nil, &customerrors.UsernameExistException{}
 	}
 
 	if (existingUser == &models.UserDetail{} || user.Id == "") {
 		userId, err := s.repo.AddSingle(*user)
 		if err != nil {
-			return "", err
+			s.logObj.Printf("Error while adding user: %+v, error: %s\n", user, err.Error())
+			return nil, &customerrors.AddUserException{}
 		}
-		return userId, nil
+		user.Id = userId
+		return user, nil
 	} else {
 		update := bson.M{"$set": bson.M{
 			"name":          user.Name,
@@ -101,76 +100,51 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (string, e
 
 		err := s.repo.UpdateSingle(update, user.Id)
 		if err != nil {
-			return "", err
+			s.logObj.Printf("Error while updating user: %+v, error: %s\n", user, err.Error())
+			return nil, &customerrors.UpdateUserException{}
 		}
-		return user.Id, nil
+		return user, nil
 	}
 }
 
 func (s *userProfileService) GetUserProfile(username string) (*models.UserDetail, error) {
-	if username != "" {
-		_filter := bson.M{"username": username}
-		user, err := s.repo.Get(_filter, 1, 0)
-		if err != nil {
-			return nil, err
-		}
-		return &user[0], nil
+	_filter := filters.InitUsernameFilter(nil, filters.AND, filters.EQUAL, username)
+	users, err := s.repo.Get(_filter.Build(), 1, 0)
+	if err != nil {
+		return nil, &customerrors.GetUserException{}
 	}
-	return nil, errors.New("user id is not valid")
+	if len(users) == 0 {
+		return nil, &customerrors.UserNotFoundException{}
+	}
+	user := &users[0]
+	if user.ImagePath != "" {
+		user.ImagePath, err = s.GetUserImageURL(user.ImagePath)
+		if err != nil {
+			user.ImagePath = ""
+		}
+	}
+	return user, nil
 }
 
-func (s *userProfileService) SaveImagetoAWS(_file multipart.File, fileName string, size int64) {
-	// Specify your AWS region and S3 bucket name
-	//region := "Asia Pacific (Mumbai) ap-south-1"
-	bucketName := "jobcrawler.portalimages"
+func (s *userProfileService) SaveImagetoAWS(_file multipart.File, userId, fileName, mimetype string, size int64) error {
 
-	// Create an AWS session
-	// sess, err := session.NewSession(&aws.Config{
-	// 	Region: aws.String(region)},
-	// )
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
+	update := bson.M{"$set": bson.M{
+		"imagepath": fileName,
+	}}
 
-	// Create an S3 client
-	svc := s3.New(sess)
-
-	// Create an S3 object with the specified bucket and key (filename)
-	_, err := svc.PutObject(&s3.PutObjectInput{
-		Bucket:        aws.String(bucketName),
-		Key:           aws.String(fileName),
-		Body:          _file,
-		ContentLength: aws.Int64(size),
-		ContentType:   aws.String("image/jpeg"), // Specify the correct content type
-	})
+	err := s.repo.UpdateSingle(update, userId)
 	if err != nil {
-		fmt.Println("Failed to upload image:", err)
-		return
+		s.logObj.Printf("Error while updating userId: %+v, error: %s\n", userId, err.Error())
+		return &customerrors.UpdateUserException{}
 	}
-
-	fmt.Println("Image uploaded successfully!")
+	err = s.s3Service.Put(_file, fileName, mimetype, size)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *userProfileService) GetUserImageURL(filename string) (string, error) {
-	bucketName := "jobcrawler.portalimages"
+	return s.s3Service.GetPreSignerUrl(filename)
 
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	// Create an S3 client
-	svc := s3.New(sess)
-
-	params := &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(filename),
-	}
-
-	req, _ := svc.GetObjectRequest(params)
-
-	url, err := req.Presign(time.Duration(2 * time.Hour)) // Set link expiration time
-	if err != nil {
-		return "", err
-	}
-	return url, nil
 }
