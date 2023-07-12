@@ -39,15 +39,7 @@ func InitUserService(repoObj repository.IUserRepository, s3Service IS3Service, l
 }
 
 func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.UserDetail, error) {
-	existingUser := new(models.UserDetail)
-	existingUser, _ = s.repo.GetById(user.Id)
 
-	//check if email id or mobile already exists in other profiles
-	objectId, err := primitive.ObjectIDFromHex(user.Id)
-	if err != nil {
-		s.logObj.Printf("error while converting id to hex %s, error: %s\n", user.Id, err.Error())
-		return nil, &customerrors.GetUserException{}
-	}
 	var filter filters.IFilter = nil
 	_filter := bson.M{}
 	if user != nil {
@@ -58,6 +50,12 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.U
 			filter = filters.InitPhoneFilter(filter, filters.OR, filters.EQUAL, user.Phone)
 		}
 		if user.Id != "" {
+			//check if email id or mobile already exists in other profiles
+			objectId, err := primitive.ObjectIDFromHex(user.Id)
+			if err != nil {
+				s.logObj.Printf("error while converting id to hex %s, error: %s\n", user.Id, err.Error())
+				return nil, &customerrors.GetUserException{}
+			}
 			filter = filters.InitIdFilter(filter, filters.AND, filters.NOT_EQUAL, objectId)
 		}
 	}
@@ -73,7 +71,7 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.U
 		return nil, &customerrors.UsernameExistException{}
 	}
 
-	if (existingUser == &models.UserDetail{} || user.Id == "") {
+	if user.Id == "" {
 		userId, err := s.repo.AddSingle(*user)
 		if err != nil {
 			s.logObj.Printf("Error while adding user: %+v, error: %s\n", user, err.Error())
@@ -82,6 +80,12 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.U
 		user.Id = userId
 		return user, nil
 	} else {
+		existingUser := new(models.UserDetail)
+		existingUser, _ = s.repo.GetById(user.Id)
+		if existingUser == nil {
+			return nil, &customerrors.UserNotFoundException{}
+		}
+
 		update := bson.M{"$set": bson.M{
 			"name":          user.Name,
 			"username":      user.UserName,
@@ -98,7 +102,7 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.U
 			"imagepath":     user.ImagePath,
 		}}
 
-		err := s.repo.UpdateSingle(update, user.Id)
+		err = s.repo.UpdateSingle(update, user.Id)
 		if err != nil {
 			s.logObj.Printf("Error while updating user: %+v, error: %s\n", user, err.Error())
 			return nil, &customerrors.UpdateUserException{}

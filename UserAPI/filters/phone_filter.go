@@ -1,27 +1,18 @@
 package filters
 
-import "go.mongodb.org/mongo-driver/bson"
-
 type PhoneFilter struct {
-	filter bson.M
+	BaseFilterTemplate
 }
 
-func (filter *PhoneFilter) Build() bson.M {
-	return filter.filter
-}
-
-func InitPhoneFilter(existingFilter IFilter, logicalOperator LogicalOperator, comparisionOperator ConditionalOperator, val any) IFilter {
-	conditionalOperation := bson.M{"phone": ConditionalOperatorFactory(comparisionOperator, val).Build()}
-
-	if existingFilter == nil {
-		return &EmailFilter{
-			filter: conditionalOperation,
-		}
+func InitPhoneFilter(existingFilter IFilter, logicalOperator LogicalOperator, conditionalOperator ConditionalOperator, val any) IFilter {
+	return &PhoneFilter{
+		BaseFilterTemplate: BaseFilterTemplate{
+			existingFilter:      existingFilter,
+			val:                 val,
+			conditionalOperator: conditionalOperator,
+			logicalOperator:     logicalOperator,
+			key:                 "phone",
+		},
 	}
 
-	logicalOperation := LogicalOperatorFactory(logicalOperator, existingFilter.Build(), conditionalOperation)
-
-	return &EmailFilter{
-		filter: logicalOperation.Build(),
-	}
 }

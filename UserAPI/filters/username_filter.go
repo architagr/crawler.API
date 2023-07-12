@@ -1,27 +1,18 @@
 package filters
 
-import "go.mongodb.org/mongo-driver/bson"
-
 type UsernameFilter struct {
-	filter bson.M
+	BaseFilterTemplate
 }
 
-func (filter *UsernameFilter) Build() bson.M {
-	return filter.filter
-}
-
-func InitUsernameFilter(existingFilter IFilter, logicalOperator LogicalOperator, comparisionOperator ConditionalOperator, val any) IFilter {
-	conditionalOperation := bson.M{"username": ConditionalOperatorFactory(comparisionOperator, val).Build()}
-
-	if existingFilter == nil {
-		return &EmailFilter{
-			filter: conditionalOperation,
-		}
+func InitUsernameFilter(existingFilter IFilter, logicalOperator LogicalOperator, conditionalOperator ConditionalOperator, val any) IFilter {
+	return &UsernameFilter{
+		BaseFilterTemplate: BaseFilterTemplate{
+			existingFilter:      existingFilter,
+			val:                 val,
+			conditionalOperator: conditionalOperator,
+			logicalOperator:     logicalOperator,
+			key:                 "username",
+		},
 	}
 
-	logicalOperation := LogicalOperatorFactory(logicalOperator, existingFilter.Build(), conditionalOperation)
-
-	return &EmailFilter{
-		filter: logicalOperation.Build(),
-	}
 }
