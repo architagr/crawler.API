@@ -10,6 +10,7 @@ import (
 type IJobController interface {
 	GetJobs(filter *models.JobFilter) (*models.GetJobResponse, error)
 	GetJobDetail(jobId string) (*models.JobDetails, error)
+	GetCourses(keywords string) (*[]models.Courses, error)
 }
 
 type jobController struct {
@@ -41,4 +42,8 @@ func (ctlr *jobController) GetJobs(filter *models.JobFilter) (*models.GetJobResp
 
 func (ctlr *jobController) GetJobDetail(jobId string) (*models.JobDetails, error) {
 	return ctlr.service.GetJobDetail(jobId)
+}
+
+func (ctlr *jobController) GetCourses(keywords string) (*[]models.Courses, error) {
+	return ctlr.service.GetCourses(keywords)
 }

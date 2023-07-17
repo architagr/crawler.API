@@ -78,6 +78,19 @@ func InitGinRouters(jobController controller.IJobController, logObj logger.ILogg
 		ginContext.JSON(http.StatusOK, response)
 	})
 
+	routerGroup.GET("/courses/:keywords", func(ginContext *gin.Context) {
+		keywords, _ := ginContext.Params.Get("keywords")
+		response, err := jobController.GetCourses(keywords)
+		if err != nil {
+			logObj.Printf("error in getting courses %+v", err)
+			ginContext.AbortWithStatusJSON(http.StatusBadRequest, map[string]any{
+				"error": err.Error(),
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, response)
+	})
+
 	return &ginRouter{
 		ginEngine: ginEngine,
 		env:       config.GetConfig(),
