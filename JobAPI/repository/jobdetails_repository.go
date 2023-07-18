@@ -8,7 +8,7 @@ import (
 )
 
 type IJobDetailsRepository interface {
-	GetJob(filter *bson.M, pageSize, pageNumber int16) ([]models.JobDetails, error)
+	GetJob(filter bson.M, pageSize, pageNumber int16) ([]models.JobDetails, error)
 	GetJobDetail(id string) (*models.JobDetails, error)
 }
 type jobDetailsRepository struct {
@@ -33,9 +33,9 @@ func InitJobDetailsRepo(conn IConnection, databaseName, collection string) (IJob
 	}
 	return jobDetailsRepoObj, nil
 }
-func (repo *jobDetailsRepository) GetJob(filter *bson.M, pageSize, pageNumber int16) ([]models.JobDetails, error) {
+func (repo *jobDetailsRepository) GetJob(filter bson.M, pageSize, pageNumber int16) ([]models.JobDetails, error) {
 
-	data, err := repo.collectionObj.Get(*filter, int64(pageSize), int64(pageNumber))
+	data, err := repo.collectionObj.Get(filter, int64(pageSize), int64(pageNumber))
 	if err != nil {
 		return nil, err
 	}

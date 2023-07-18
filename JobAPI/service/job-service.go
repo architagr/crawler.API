@@ -1,6 +1,7 @@
 package service
 
 import (
+	"JobAPI/filters"
 	"JobAPI/models"
 	"JobAPI/repository"
 	"encoding/base64"
@@ -33,33 +34,22 @@ func InitJobService(repoObj repository.IJobDetailsRepository) IJobService {
 	return jobServiceObj
 }
 
-func (svc *jobService) GetJobs(filter *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
-
+func (svc *jobService) GetJobs(filterData *models.JobFilter, pageSize, pageNumber int16) (*models.GetJobResponse, error) {
+	var filter filters.IFilter = nil
 	_filter := bson.M{}
-	if filter != nil {
-		if filter.Location != "" {
-			//_filter = bson.M{"location": filter.Location}
-			_filter = bson.M{
-				"$and": []bson.M{
-					{"location": filter.Location},
-					{
-						"$or": []bson.M{
-							{"title": filter.Keywords},
-							{"companyName": filter.Keywords},
-						},
-					},
-				},
-			}
-		} else if filter.Keywords != "" {
-			_filter = bson.M{
-				"$or": []bson.M{
-					{"title": filter.Keywords},
-					{"companyName": filter.Keywords},
-				},
-			}
+	if filterData != nil {
+		if filterData.Location != "" {
+			filter = filters.InitLocationFilter(filter, filters.AND, filters.EQUAL, filterData.Location)
+		}
+		if filterData.Keywords != "" {
+			filter = filters.InitTitleFilter(filter, filters.OR, filters.EQUAL, filterData.Keywords)
+			filter = filters.InitCompanynameFilter(filter, filters.OR, filters.EQUAL, filterData.Keywords)
 		}
 	}
-	data, err := svc.repo.GetJob(&_filter, pageSize, pageNumber)
+	if filter != nil {
+		_filter = filter.Build()
+	}
+	data, err := svc.repo.GetJob(_filter, pageSize, pageNumber)
 	if err != nil {
 		return nil, err
 	}
