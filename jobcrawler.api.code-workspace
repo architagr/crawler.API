@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "UserAPI"
+		},
+		{
+			"path": "infra"
 		}
 	]
 }
