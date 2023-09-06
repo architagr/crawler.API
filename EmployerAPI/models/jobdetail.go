@@ -2,6 +2,7 @@ package models
 
 type JobDetail struct {
 	Id            string `json:"_id" bson:"_id,omitempty"`
+	EmployerId    string `json:"employerid"`
 	Title         string `json:"title"`
 	Description   string `json:"description"`
 	Email         string `json:"email"`
@@ -13,4 +14,9 @@ type JobDetail struct {
 	Qualification string `json:"qualification"`
 	Deadline      string `json:"deadline"`
 	JobLocation   string `json:"location"`
+}
+type GetJobResponse struct {
+	Jobs       []JobDetail `json:"jobs"`
+	PageSize   int16       `json:"pageSize"`
+	PageNumber int16       `json:"pageNumber"`
 }

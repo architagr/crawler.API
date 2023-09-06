@@ -1,13 +1,17 @@
 package service
 
 import (
+	"EmployerAPI/filters"
 	"EmployerAPI/logger"
 	"EmployerAPI/models"
 	"EmployerAPI/repository"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IEmployerService interface {
 	SaveJob(jobDetail *models.JobDetail) (*models.JobDetail, error)
+	GetJobs(filterData *models.JobFilter) (*models.GetJobResponse, error)
 }
 
 type employerService struct {
@@ -36,4 +40,26 @@ func (s *employerService) SaveJob(jobDetail *models.JobDetail) (*models.JobDetai
 	}
 	jobDetail.Id = jobId
 	return jobDetail, nil
+}
+
+func (s *employerService) GetJobs(filterData *models.JobFilter) (*models.GetJobResponse, error) {
+	var filter filters.IFilter = nil
+	_filter := bson.M{}
+	if filterData != nil {
+		if filterData.EmployerId != "" {
+			filter = filters.InitEmployerIdFilter(filter, filters.AND, filters.EQUAL, filterData.EmployerId)
+		}
+	}
+	if filter != nil {
+		_filter = filter.Build()
+	}
+	data, err := s.repo.Get(_filter, int64(filterData.PageSize), int64(filterData.PageNumber))
+	if err != nil {
+		return nil, err
+	}
+	return &models.GetJobResponse{
+		Jobs:       data,
+		PageSize:   filterData.PageSize,
+		PageNumber: filterData.PageNumber,
+	}, nil
 }

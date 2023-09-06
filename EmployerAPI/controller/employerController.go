@@ -8,6 +8,7 @@ import (
 
 type IEmployerController interface {
 	SaveJob(jobDetail *models.JobDetail) (*models.JobDetail, error)
+	GetJobs(filter *models.JobFilter) (*models.GetJobResponse, error)
 }
 
 type employerController struct {
@@ -29,4 +30,8 @@ func InitEmployerController(serviceObj service.IEmployerService, logObj logger.I
 
 func (ctlr *employerController) SaveJob(jobDetail *models.JobDetail) (*models.JobDetail, error) {
 	return ctlr.service.SaveJob(jobDetail)
+}
+
+func (ctlr *employerController) GetJobs(filter *models.JobFilter) (*models.GetJobResponse, error) {
+	return ctlr.service.GetJobs(filter)
 }

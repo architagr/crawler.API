@@ -11,15 +11,15 @@
             "mode": "debug",
             "program": "${workspaceFolder}/main.go",
             "args": [
-                "--port", "8080"
+                "--port", "8082"
             ], 
             "showLog": true,
             "env": {
                 "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
                 "DatabaseName":"webscrapper",
                 "LoginCollectionName":"authDetails",
-                "UserPoolId":"ap-southeast-1_2GIOsZ7ui",
-                "ClientId": "4l3bi0rt1blko86q659mo60g79"
+                "UserPoolId":"ap-southeast-1_nzMRoSjhp",
+                "ClientId": "2mhbsi7ha643g4mu3u93iulsfg"
             }
         }
     ]

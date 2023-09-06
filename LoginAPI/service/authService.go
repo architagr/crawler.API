@@ -76,6 +76,19 @@ func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Toke
 			return nil, &customerrors.UpdatePasswordException{}
 		}
 	}
+
+	addUserToGroupInput := &cognitoidentityprovider.AdminAddUserToGroupInput{
+		GroupName:  aws.String("Employer"),
+		UserPoolId: aws.String(s.env.GetUserPoolId()),
+		Username:   aws.String(*userData.User.Username),
+	}
+
+	_, err = s.cognito.AdminAddUserToGroup(addUserToGroupInput)
+	if err != nil {
+		s.logObj.Printf("error in adding user (%s) to group, error: %+v", user.UserName, err)
+		return nil, s.processCreateUserError(err)
+	}
+
 	return s.LoginUser(user)
 }
 
@@ -111,6 +124,7 @@ func (s *authService) LoginUser(loginDetails *models.LoginDetails) (*models.Toke
 	if authOutput.ChallengeName != nil && *authOutput.ChallengeName == localAwsPkg.COGNITO_CHALLANGE_NAME_NEW_PASSWORD_REQUIRED {
 		return response, &customerrors.PasswordExpireException{}
 	}
+
 	return response, nil
 }
 

@@ -82,6 +82,27 @@ func createEmployerRoutes(group *gin.RouterGroup, employerController controller.
 		ginContext.JSON(http.StatusOK, userData)
 	})
 
+	jobGroup.POST("/getJobs", func(ginContext *gin.Context) {
+		var jobFilter models.JobFilter
+		if err := ginContext.ShouldBind(&jobFilter); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		userData, err := employerController.GetJobs(&jobFilter)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, userData)
+	})
+
 }
 func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
 	return ginEngine.Group("/employer")

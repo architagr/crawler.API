@@ -18,7 +18,8 @@ var (
 )
 
 var envVariables config.IConfig
-var employerRepoObj repository.IJobRepository
+var employerRepoObj repository.IEmployerRepository
+var jobRepoObj repository.IJobRepository
 var employerService service.IEmployerService
 var employerController controller.IEmployerController
 var s3Service service.IS3Service
@@ -51,7 +52,12 @@ func initRepository() {
 		panic(err)
 	}
 
-	employerRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), "employerProfile")
+	employerRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetEmployerCollectionName())
+	if err != nil {
+		panic(err)
+	}
+
+	jobRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetJobCollectionName())
 	if err != nil {
 		panic(err)
 	}

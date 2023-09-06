@@ -8,18 +8,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type IJobRepository interface {
+type IEmployerRepository interface {
 	AddSingle(job models.JobDetail) (string, error)
 	Get(filter bson.M, pageSize int64, startPage int64) ([]models.JobDetail, error)
 }
 
-type jobRepository struct {
+type employerRepository struct {
 	collectionObj ICollection[models.JobDetail]
 }
 
-var jobRepoObject IJobRepository
+var employerRepoObject IJobRepository
 
-func InitJobRepository(conn IConnection, databaseName, collection string) (IJobRepository, error) {
+func InitEmployerRepository(conn IConnection, databaseName, collection string) (IJobRepository, error) {
 	if jobRepoObject != nil {
 		return jobRepoObject, nil
 	}
@@ -33,7 +33,7 @@ func InitJobRepository(conn IConnection, databaseName, collection string) (IJobR
 	return jobRepoObject, nil
 }
 
-func (repo *jobRepository) GetById(Id string) (*models.JobDetail, error) {
+func (repo *employerRepository) GetById(Id string) (*models.JobDetail, error) {
 	if Id != "" {
 		data, err := repo.collectionObj.GetById(Id)
 		if err != nil {
@@ -44,7 +44,7 @@ func (repo *jobRepository) GetById(Id string) (*models.JobDetail, error) {
 	return nil, nil
 }
 
-func (repo *jobRepository) Get(filter bson.M, pageSize int64, startPage int64) ([]models.JobDetail, error) {
+func (repo *employerRepository) Get(filter bson.M, pageSize int64, startPage int64) ([]models.JobDetail, error) {
 	data, err := repo.collectionObj.Get(filter, pageSize, startPage)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (repo *jobRepository) Get(filter bson.M, pageSize int64, startPage int64) (
 	return data, nil
 }
 
-func (repo *jobRepository) AddSingle(job models.JobDetail) (string, error) {
+func (repo *employerRepository) AddSingle(job models.JobDetail) (string, error) {
 	data, err := repo.collectionObj.AddSingle(job)
 	if err != nil {
 		return "", err
@@ -60,7 +60,7 @@ func (repo *jobRepository) AddSingle(job models.JobDetail) (string, error) {
 	return data.(primitive.ObjectID).Hex(), nil
 }
 
-func (repo *jobRepository) UpdateSingle(data primitive.M, Id string) error {
+func (repo *employerRepository) UpdateSingle(data primitive.M, Id string) error {
 	err := repo.collectionObj.UpdateSingle(data, Id)
 	return err
 }
