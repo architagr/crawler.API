@@ -78,7 +78,7 @@ func (s *authService) CreateCognitoUser(user *models.LoginDetails) (*models.Toke
 	}
 
 	addUserToGroupInput := &cognitoidentityprovider.AdminAddUserToGroupInput{
-		GroupName:  aws.String("Employer"),
+		GroupName:  aws.String(user.Role),
 		UserPoolId: aws.String(s.env.GetUserPoolId()),
 		Username:   aws.String(*userData.User.Username),
 	}

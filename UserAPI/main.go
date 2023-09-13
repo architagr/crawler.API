@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	port = flag.Int("port", 8080, "this value is used when we run the service on local")
+	port = flag.Int("port", 8081, "this value is used when we run the service on local")
 )
 
 var envVariables config.IConfig

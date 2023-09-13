@@ -20,7 +20,7 @@ var (
 var envVariables config.IConfig
 var employerRepoObj repository.IEmployerRepository
 var jobRepoObj repository.IJobRepository
-var employerService service.IEmployerService
+var employerJobService service.IEmployerService
 var employerController controller.IEmployerController
 var s3Service service.IS3Service
 var s3Session s3Interface.S3API
@@ -52,10 +52,10 @@ func initRepository() {
 		panic(err)
 	}
 
-	employerRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetEmployerCollectionName())
-	if err != nil {
-		panic(err)
-	}
+	// employerRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetEmployerCollectionName())
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	jobRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetJobCollectionName())
 	if err != nil {
@@ -66,9 +66,9 @@ func initRepository() {
 func intitServices() {
 	s3Service = service.InitS3Service(s3Session, envVariables.GetAvatarImageBucketName(), logObj)
 
-	employerService = service.InitJobService(employerRepoObj, s3Service, logObj)
+	employerJobService = service.InitJobService(jobRepoObj, s3Service, logObj)
 }
 
 func initControllers() {
-	employerController = controller.InitEmployerController(employerService, logObj)
+	employerController = controller.InitEmployerController(employerJobService, logObj)
 }

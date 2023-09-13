@@ -11,14 +11,14 @@
             "mode": "debug",
             "program": "${workspaceFolder}/main.go",
             "args": [
-                "--port", "8080"
+                "--port", "8081"
             ], 
             "showLog": true,
             "env": {
                 "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
                 "DatabaseName":"webscrapper",
                 "UserCollectionName":"userProfile",
-                "AvatarImageBucketName": "jobcrawler.portalimagesnew"
+                "AvatarImageBucketName": "jobcrawler.images"
             }
         }
     ]

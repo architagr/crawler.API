@@ -61,7 +61,7 @@ func InitGinRouters(employerController controller.IEmployerController, logObj lo
 func createEmployerRoutes(group *gin.RouterGroup, employerController controller.IEmployerController, logObj logger.ILogger) {
 	jobGroup := group.Group("job")
 
-	jobGroup.POST("/", func(ginContext *gin.Context) {
+	jobGroup.POST("/save", func(ginContext *gin.Context) {
 		var jobDetail models.JobDetail
 		if err := ginContext.ShouldBind(&jobDetail); err != nil {
 			logObj.Printf("wrong request body %+v", err)
