@@ -99,7 +99,6 @@ func (s *userProfileService) SaveUserProfile(user *models.UserDetail) (*models.U
 			"jobcategory":   user.JobCategory,
 			"language":      user.Language,
 			"description":   user.Description,
-			"imagepath":     user.ImagePath,
 		}}
 
 		err = s.repo.UpdateSingle(update, user.Id)

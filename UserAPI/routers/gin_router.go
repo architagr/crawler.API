@@ -62,7 +62,7 @@ func InitGinRouters(userController controller.IUserController, logObj logger.ILo
 func createUserProfileRoutes(group *gin.RouterGroup, userController controller.IUserController, logObj logger.ILogger) {
 	userProfileGroup := group.Group("profile")
 
-	userProfileGroup.POST("/", func(ginContext *gin.Context) {
+	userProfileGroup.POST("/save", func(ginContext *gin.Context) {
 		var userDetails models.UserDetail
 		if err := ginContext.ShouldBind(&userDetails); err != nil {
 			logObj.Printf("wrong request body %+v", err)

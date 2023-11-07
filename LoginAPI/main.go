@@ -29,7 +29,7 @@ func main() {
 	initLogger()
 	initConfig()
 	initRepository()
-	intitServices()
+	initServices()
 	initControllers()
 	routers.InitGinRouters(authControllerObj, logObj).StartApp(*port)
 }
@@ -52,7 +52,7 @@ func initRepository() {
 	}
 }
 
-func intitServices() {
+func initServices() {
 	authServiceObj = service.InitAuthService(authRepoObj, envVariables, cognito, logObj)
 }
 
