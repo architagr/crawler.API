@@ -39,7 +39,7 @@ func (router *ginRouter) StartApp(port int) {
 	}
 }
 
-func InitGinRouters(employerController controller.IEmployerController, logObj logger.ILogger) IRouter {
+func InitGinRouters(employerController controller.IEmployerController, companyController controller.ICompanyController, logObj logger.ILogger) IRouter {
 	ginMiddleware = getMiddlewares()
 	ginEngine := gin.Default()
 	registerInitialCommonMiddleware(ginEngine, logObj)
@@ -51,6 +51,7 @@ func InitGinRouters(employerController controller.IEmployerController, logObj lo
 		})
 	})
 	createEmployerRoutes(routerGroup, employerController, logObj)
+	createCompanyRoutes(routerGroup, companyController, logObj)
 	return &ginRouter{
 		ginEngine: ginEngine,
 		env:       config.GetConfig(),
@@ -82,7 +83,7 @@ func createEmployerRoutes(group *gin.RouterGroup, employerController controller.
 		ginContext.JSON(http.StatusOK, userData)
 	})
 
-	jobGroup.POST("/getJobs", func(ginContext *gin.Context) {
+	jobGroup.POST("/get", func(ginContext *gin.Context) {
 		var jobFilter models.JobFilter
 		if err := ginContext.ShouldBind(&jobFilter); err != nil {
 			logObj.Printf("wrong request body %+v", err)
@@ -104,12 +105,106 @@ func createEmployerRoutes(group *gin.RouterGroup, employerController controller.
 	})
 
 }
+
+func createCompanyRoutes(group *gin.RouterGroup, companyController controller.ICompanyController, logObj logger.ILogger) {
+	companyGroup := group.Group("company")
+
+	companyGroup.POST("/save", func(ginContext *gin.Context) {
+		var companyDetail models.Company
+		if err := ginContext.ShouldBind(&companyDetail); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		userName, exists := ginContext.Get("user_name")
+		if !exists {
+			ginContext.JSON(http.StatusUnauthorized, gin.H{"message": "User ID not found in context"})
+			ginContext.Abort()
+			return
+		}
+		companyDetail.EmployerId = userName.(string)
+		userData, err := companyController.SaveCompany(&companyDetail)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, userData)
+	})
+
+	companyGroup.PUT("/image/:id", func(ginContext *gin.Context) {
+
+		var updateAvatarRequest models.CompanyImage
+		if err := ginContext.ShouldBind(&updateAvatarRequest); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		if err := ginContext.ShouldBindUri(&updateAvatarRequest); err != nil {
+			logObj.Printf("wrong request param %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		err := companyController.SaveCompanyImage(&updateAvatarRequest)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, map[string]string{
+			"message": "image uploaded",
+		})
+	})
+
+	companyGroup.POST("/get", func(ginContext *gin.Context) {
+		var filter models.SearchFilter
+		if err := ginContext.ShouldBind(&filter); err != nil {
+			logObj.Printf("wrong request body %+v", err)
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypeBind,
+			})
+			return
+		}
+		userName, exists := ginContext.Get("user_name")
+		if !exists {
+			ginContext.JSON(http.StatusUnauthorized, gin.H{"message": "User ID not found in context"})
+			ginContext.Abort()
+			return
+		}
+		filter.EmployerId = userName.(string)
+		userData, err := companyController.GetCompanies(&filter)
+		if err != nil {
+			ginContext.Errors = append(ginContext.Errors, &gin.Error{
+				Err:  err,
+				Type: gin.ErrorTypePrivate,
+			})
+			return
+		}
+		ginContext.JSON(http.StatusOK, userData)
+	})
+}
+
 func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
 	return ginEngine.Group("/employer")
 }
 func registerInitialCommonMiddleware(ginEngine *gin.Engine, logObj logger.ILogger) {
 	ginEngine.Use(ginMiddleware.GetErrorHandler(logObj))
 	ginEngine.Use(ginMiddleware.GetCorsMiddelware())
+	ginEngine.Use(ginMiddleware.GetTokenInfo())
 }
 func getMiddlewares() middlewarePkg.IMiddleware[gin.HandlerFunc] {
 	return middlewarePkg.InitGinMiddelware()

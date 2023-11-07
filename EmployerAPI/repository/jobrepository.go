@@ -11,6 +11,7 @@ import (
 type IJobRepository interface {
 	AddSingle(job models.JobDetail) (string, error)
 	Get(filter bson.M, pageSize int64, startPage int64) ([]models.JobDetail, error)
+	UpdateSingle(data primitive.M, Id string) error
 }
 
 type jobRepository struct {

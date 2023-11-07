@@ -7,6 +7,7 @@ import (
 	"EmployerAPI/repository"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type IEmployerService interface {
@@ -34,11 +35,37 @@ func InitJobService(repoObj repository.IJobRepository, s3Service IS3Service, log
 }
 
 func (s *employerService) SaveJob(jobDetail *models.JobDetail) (*models.JobDetail, error) {
-	jobId, err := s.repo.AddSingle(*jobDetail)
-	if err != nil {
-		return nil, err
+	if jobDetail.Id != "" {
+		update := bson.M{"$set": bson.M{
+			"title":       jobDetail.Title,
+			"description": jobDetail.Description,
+			"competency":  jobDetail.Competency,
+			"category":    jobDetail.Category,
+			"payby":       jobDetail.PayBy,
+			"minamount":   jobDetail.MinAmount,
+			"maxamount":   jobDetail.MaxAmount,
+			"rate":        jobDetail.Rate,
+			"modeofwork":  jobDetail.ModeOfWork,
+			"jobType":     jobDetail.JobType,
+			"gender":      jobDetail.Gender,
+			"experience":  jobDetail.Experience,
+			"deadline":    jobDetail.Deadline,
+			"country":     jobDetail.Country,
+			"city":        jobDetail.City,
+			"companyid":   jobDetail.CompanyId,
+		}}
+		err := s.repo.UpdateSingle(update, jobDetail.Id)
+		if err != nil {
+			s.logObj.Printf("Error while updating Employer job, error: %s\n", err.Error())
+			return nil, err
+		}
+	} else {
+		jobId, err := s.repo.AddSingle(*jobDetail)
+		if err != nil {
+			return nil, err
+		}
+		jobDetail.Id = jobId
 	}
-	jobDetail.Id = jobId
 	return jobDetail, nil
 }
 
@@ -48,6 +75,14 @@ func (s *employerService) GetJobs(filterData *models.JobFilter) (*models.GetJobR
 	if filterData != nil {
 		if filterData.EmployerId != "" {
 			filter = filters.InitEmployerIdFilter(filter, filters.AND, filters.EQUAL, filterData.EmployerId)
+		}
+		if filterData.JobId != "" {
+			objectId, err := primitive.ObjectIDFromHex(filterData.JobId)
+			if err != nil {
+				s.logObj.Printf("error while converting id to hex %s, error: %s\n", filterData.JobId, err.Error())
+				return nil, err
+			}
+			filter = filters.InitIdFilter(filter, filters.AND, filters.EQUAL, objectId)
 		}
 	}
 	if filter != nil {

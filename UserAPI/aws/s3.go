@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	s3Interface "github.com/aws/aws-sdk-go/service/s3/s3iface"
@@ -12,6 +13,9 @@ func GetS3Session() s3Interface.S3API {
 	if s3Svc == nil {
 		sess := session.Must(session.NewSessionWithOptions(session.Options{
 			SharedConfigState: session.SharedConfigEnable,
+			Config: aws.Config{
+				Region: aws.String("ap-south-1"),
+			},
 		}))
 		s3Svc = s3.New(sess)
 	}

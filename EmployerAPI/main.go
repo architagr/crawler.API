@@ -18,10 +18,12 @@ var (
 )
 
 var envVariables config.IConfig
-var employerRepoObj repository.IEmployerRepository
+var companyRepoObj repository.ICompanyRepository
 var jobRepoObj repository.IJobRepository
 var employerJobService service.IEmployerService
+var companyService service.ICompanyService
 var employerController controller.IEmployerController
+var companyController controller.ICompanyController
 var s3Service service.IS3Service
 var s3Session s3Interface.S3API
 var logObj logger.ILogger
@@ -34,7 +36,7 @@ func main() {
 	initRepository()
 	intitServices()
 	initControllers()
-	routers.InitGinRouters(employerController, logObj).StartApp(*port)
+	routers.InitGinRouters(employerController, companyController, logObj).StartApp(*port)
 
 }
 func initS3Session() {
@@ -52,12 +54,12 @@ func initRepository() {
 		panic(err)
 	}
 
-	// employerRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetEmployerCollectionName())
-	// if err != nil {
-	// 	panic(err)
-	// }
+	companyRepoObj, err = repository.InitCompanyRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetCompanyCollectionName())
+	if err != nil {
+		panic(err)
+	}
 
-	jobRepoObj, err = repository.InitEmployerRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetJobCollectionName())
+	jobRepoObj, err = repository.InitJobRepository(mongodbConnection, envVariables.GetDatabaseName(), envVariables.GetJobCollectionName())
 	if err != nil {
 		panic(err)
 	}
@@ -67,8 +69,11 @@ func intitServices() {
 	s3Service = service.InitS3Service(s3Session, envVariables.GetAvatarImageBucketName(), logObj)
 
 	employerJobService = service.InitJobService(jobRepoObj, s3Service, logObj)
+
+	companyService = service.InitCompanyService(companyRepoObj, s3Service, logObj)
 }
 
 func initControllers() {
 	employerController = controller.InitEmployerController(employerJobService, logObj)
+	companyController = controller.InitCompanyController(companyService, logObj)
 }

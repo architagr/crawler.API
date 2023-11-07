@@ -5,7 +5,9 @@ import (
 	"EmployerAPI/logger"
 	"EmployerAPI/models"
 	"net/http"
+	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,6 +61,41 @@ func handleAuthError(c *gin.Context, err error) {
 		ErrorCode: errorCode,
 		Message:   err.Error(),
 	})
+}
+func (*ginMiddeleware) GetTokenInfo() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Failed to parse token"})
+			c.Abort()
+			return
+		}
+		tokenString := strings.Split(authHeader, " ")[1]
+		token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Failed to parse token"})
+			c.Abort()
+			return
+		}
+		// Extract claims from the token
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token claims"})
+			c.Abort()
+			return
+		}
+		userID, ok := claims["username"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "User ID not found in claims"})
+			c.Abort()
+			return
+		}
+
+		// Set the user ID in the context for use in downstream handlers
+		c.Set("user_name", userID)
+
+		c.Next()
+	}
 }
 func InitGinMiddelware() IMiddleware[gin.HandlerFunc] {
 	return &ginMiddeleware{}

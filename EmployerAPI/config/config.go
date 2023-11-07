@@ -9,6 +9,7 @@ type IConfig interface {
 	GetDatabaseName() string
 	GetEmployerCollectionName() string
 	GetJobCollectionName() string
+	GetCompanyCollectionName() string
 	GetAvatarImageBucketName() string
 	IsLambda() bool
 }
@@ -17,6 +18,7 @@ type Config struct {
 	databaseName             string
 	employerCollectionName   string
 	jobCollectionName        string
+	companyCollectionName    string
 	isLambda                 bool
 	avatarImageBucketName    string
 }
@@ -28,6 +30,7 @@ const (
 	databaseNameKey             = "DatabaseName"
 	employerCollectionKey       = "EmployerCollection"
 	jobCollectionKey            = "JobCollection"
+	companyCollectionKey        = "CompanyCollection"
 	avatarImageBucketNameKey    = "AvatarImageBucketName"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
@@ -40,6 +43,7 @@ func InitConfig() {
 		databaseName:             os.Getenv(databaseNameKey),
 		employerCollectionName:   os.Getenv(employerCollectionKey),
 		jobCollectionName:        os.Getenv(jobCollectionKey),
+		companyCollectionName:    os.Getenv(companyCollectionKey),
 		avatarImageBucketName:    os.Getenv(avatarImageBucketNameKey),
 		isLambda:                 ok,
 	}
@@ -66,6 +70,10 @@ func (e *Config) GetEmployerCollectionName() string {
 
 func (e *Config) GetJobCollectionName() string {
 	return e.jobCollectionName
+}
+
+func (e *Config) GetCompanyCollectionName() string {
+	return e.companyCollectionName
 }
 
 func (e *Config) IsLambda() bool {

@@ -6,5 +6,11 @@ type PaginationParam struct {
 }
 type JobFilter struct {
 	EmployerId string `json:"employerid"`
+	JobId      string `json:"jobid"`
+	PaginationParam
+}
+type SearchFilter struct {
+	EmployerId string `json:"employerid"`
+	Id         string `json:"id"`
 	PaginationParam
 }
