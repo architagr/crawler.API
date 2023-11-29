@@ -5,6 +5,7 @@ import (
 	"EmployerAPI/logger"
 	"EmployerAPI/models"
 	"EmployerAPI/repository"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -53,6 +54,7 @@ func (s *employerService) SaveJob(jobDetail *models.JobDetail) (*models.JobDetai
 			"country":     jobDetail.Country,
 			"city":        jobDetail.City,
 			"companyid":   jobDetail.CompanyId,
+			"createddate": time.Now(), //temp code, neeeds to be removed
 		}}
 		err := s.repo.UpdateSingle(update, jobDetail.Id)
 		if err != nil {

@@ -74,6 +74,6 @@ func intitServices() {
 }
 
 func initControllers() {
-	employerController = controller.InitEmployerController(employerJobService, logObj)
+	employerController = controller.InitEmployerController(employerJobService, companyService, logObj)
 	companyController = controller.InitCompanyController(companyService, logObj)
 }
