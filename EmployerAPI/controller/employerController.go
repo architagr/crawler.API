@@ -12,17 +12,20 @@ type IEmployerController interface {
 }
 
 type employerController struct {
-	service service.IEmployerService
-	logObj  logger.ILogger
+	service        service.IEmployerService
+	companyService service.ICompanyService
+	logObj         logger.ILogger
 }
 
 var employerControllerObj IEmployerController
 
-func InitEmployerController(serviceObj service.IEmployerService, logObj logger.ILogger) IEmployerController {
+func InitEmployerController(serviceObj service.IEmployerService, companyServiceObj service.ICompanyService,
+	logObj logger.ILogger) IEmployerController {
 	if employerControllerObj == nil {
 		employerControllerObj = &employerController{
-			service: serviceObj,
-			logObj:  logObj,
+			service:        serviceObj,
+			companyService: companyServiceObj,
+			logObj:         logObj,
 		}
 	}
 	return employerControllerObj

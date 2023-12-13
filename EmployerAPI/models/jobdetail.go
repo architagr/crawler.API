@@ -1,25 +1,28 @@
 package models
 
+import "time"
+
 type JobDetail struct {
-	Id             string `json:"_id" bson:"_id,omitempty"`
-	EmployerId     string `json:"employerid"`
-	Title          string `json:"title"`
-	Description    string `json:"description"`
-	Competency     string `json:"competency"`
-	Category       string `json:"category"`
-	PayBy          string `json:"payby"`
-	MinAmount      string `json:"minamount"`
-	MaxAmount      string `json:"maxamount"`
-	Rate           string `json:"rate"`
-	ModeOfWork     string `json:"modeofwork"`
-	JobType        string `json:"jobType"`
-	Gender         string `json:"gender"`
-	Experience     string `json:"experience"`
-	Deadline       string `json:"deadline"`
-	Country        string `json:"country"`
-	City           string `json:"city"`
-	CompanyId      string `json:"companyid"`
-	CompanyLogoUrl string `json:"companylogourl"`
+	Id             string    `json:"_id" bson:"_id,omitempty"`
+	EmployerId     string    `json:"employerid"`
+	Title          string    `json:"title"`
+	Description    string    `json:"description"`
+	Competency     string    `json:"competency"`
+	Category       string    `json:"category"`
+	PayBy          string    `json:"payby"`
+	MinAmount      string    `json:"minamount"`
+	MaxAmount      string    `json:"maxamount"`
+	Rate           string    `json:"rate"`
+	ModeOfWork     string    `json:"modeofwork"`
+	JobType        string    `json:"jobType"`
+	Gender         string    `json:"gender"`
+	Experience     string    `json:"experience"`
+	Deadline       time.Time `json:"deadline"`
+	Country        string    `json:"country"`
+	City           string    `json:"city"`
+	CompanyId      string    `json:"companyid"`
+	CompanyLogoUrl string    `json:"companylogourl"`
+	CreatedDate    time.Time `json:"createddate"`
 }
 type GetJobResponse struct {
 	Jobs       []JobDetail `json:"jobs"`
