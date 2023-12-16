@@ -27,11 +27,11 @@ type RestApiProps struct {
 }
 
 func BuildRestApi(props *RestApiProps) apigateway.LambdaRestApi {
-	functionId := fmt.Sprintf("%s-%s", props.StackNamePrefix, props.Id)
-	functionName := fmt.Sprintf("%s-%s", props.StackNamePrefix, props.Name)
+	functionId := props.StackNamePrefix.PrependStackName(props.Id)
+	functionName := props.StackNamePrefix.PrependStackName(props.Name)
 
 	apiLogs := awslogs.NewLogGroup(props.Stack, &functionId, &awslogs.LogGroupProps{
-		LogGroupName:  jsii.String(fmt.Sprintf("%s-%s-Log", props.StackNamePrefix, props.Name)),
+		LogGroupName:  jsii.String(props.StackNamePrefix.PrependStackName(fmt.Sprintf("%s-Log", functionName))),
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 	deployOptions := &apigateway.StageOptions{

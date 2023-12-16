@@ -10,18 +10,19 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-type DatabaseModel struct {
-	connectionString, dbname, collectionName string
+type DatabaseModel[T any] struct {
+	connectionString, dbname *string
+	collectionName           T
 }
 
-func (db *DatabaseModel) GetConnectionString() string {
+func (db *DatabaseModel[T]) GetConnectionString() *string {
 	return db.connectionString
 }
 
-func (db *DatabaseModel) GetDbName() string {
+func (db *DatabaseModel[T]) GetDbName() *string {
 	return db.dbname
 }
-func (db *DatabaseModel) GetCollectionName() string {
+func (db *DatabaseModel[T]) GetCollectionName() T {
 	return db.collectionName
 }
 
@@ -36,12 +37,31 @@ type InfraEnv struct {
 	HostedZoneId   string
 	CertificateArn string
 }
+type EmployerCollection struct {
+	jobCollectionName, companyCollectionName string
+}
+
+func (db *EmployerCollection) GetCompanyCollectionName() string {
+	return db.companyCollectionName
+}
+func (db *EmployerCollection) GetJobCollectionName() string {
+	return db.jobCollectionName
+}
+
+type StackNamePrefixModel struct {
+	name string
+}
+
+func (obj *StackNamePrefixModel) PrependStackName(str string) string {
+	return fmt.Sprintf("%s-%s", obj.name, str)
+}
 
 type CommonProps struct {
 	awscdk.StackProps
-	StackNamePrefix                 string
+	StackNamePrefix                 StackNamePrefixModel
 	CurrentEnv                      string
-	JobAPIDB, LoginAPIDB, UserAPIDB DatabaseModel
+	JobAPIDB, LoginAPIDB, UserAPIDB DatabaseModel[string]
+	EmployerAPIDB                   DatabaseModel[EmployerCollection]
 	InfraEnv
 }
 
@@ -49,34 +69,47 @@ const baseDomain = "hiringfunda.com"
 
 var currentEnv string = ""
 var project string = ""
+var connectionString string = ""
+var dbname string = ""
+var hostedZoneId string = ""
+var certificateArn string = ""
 
 func GetCommonProps(app awscdk.App) *CommonProps {
 	stackProps := env(app)
 	apiBasePath := getApiBasePath(currentEnv)
-	stackNamePrefix := fmt.Sprintf("%s-%s", currentEnv, project)
+	stackNamePrefix := GetStringWithEnv(currentEnv, project)
 	return &CommonProps{
-		StackProps:      stackProps,
-		CurrentEnv:      currentEnv,
-		StackNamePrefix: stackNamePrefix,
-		JobAPIDB: DatabaseModel{
-			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-			dbname:           "webscrapper",
-			collectionName:   "jobDetails",
+		StackProps: stackProps,
+		CurrentEnv: currentEnv,
+		StackNamePrefix: StackNamePrefixModel{
+			name: stackNamePrefix,
 		},
-		LoginAPIDB: DatabaseModel{
-			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-			dbname:           "webscrapper",
-			collectionName:   "authDetails",
+		JobAPIDB: DatabaseModel[string]{
+			connectionString: &connectionString,
+			dbname:           &dbname,
+			collectionName:   GetStringWithEnv(currentEnv, "jobDetails"),
 		},
-		UserAPIDB: DatabaseModel{
-			connectionString: "mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-			dbname:           "webscrapper",
-			collectionName:   "",
+		LoginAPIDB: DatabaseModel[string]{
+			connectionString: &connectionString,
+			dbname:           &dbname,
+			collectionName:   GetStringWithEnv(currentEnv, "authDetails"),
+		},
+		UserAPIDB: DatabaseModel[string]{
+			connectionString: &connectionString,
+			dbname:           &dbname,
+			collectionName:   GetStringWithEnv(currentEnv, "userProfile"),
+		},
+		EmployerAPIDB: DatabaseModel[EmployerCollection]{
+			connectionString: &connectionString,
+			dbname:           &dbname,
+			collectionName: EmployerCollection{
+				jobCollectionName:     GetStringWithEnv(currentEnv, "employerJobDetails"),
+				companyCollectionName: GetStringWithEnv(currentEnv, "companyDetails"),
+			},
 		},
 		InfraEnv: InfraEnv{
-			HostedZoneId: "Z069835117JUXI2FCKK2F",
-			//CertificateArn:  "arn:aws:acm:ap-southeast-1:638580160310:certificate/39af19ea-f694-4524-83df-b043ba457278",
-			CertificateArn:   "arn:aws:acm:us-east-1:638580160310:certificate/d70647bd-a714-4add-8d3b-787f55ab5213",
+			HostedZoneId:     hostedZoneId,
+			CertificateArn:   certificateArn,
 			ApiBasePath:      apiBasePath,
 			BaseDomain:       baseDomain,
 			CommonStackProps: CommonStackProps{},
@@ -104,6 +137,10 @@ func env(app awscdk.App) awscdk.StackProps {
 	region := fmt.Sprint(app.Node().TryGetContext(jsii.String("REGION")))
 	project = fmt.Sprint(app.Node().TryGetContext(jsii.String("PROJECT")))
 	currentEnv = fmt.Sprint(app.Node().TryGetContext(jsii.String("ENV")))
+	connectionString = fmt.Sprint(app.Node().TryGetContext(jsii.String("DbConnectionString")))
+	dbname = fmt.Sprint(app.Node().TryGetContext(jsii.String("DatabaseName")))
+	hostedZoneId = fmt.Sprint(app.Node().TryGetContext(jsii.String("HostedZoneId")))
+	certificateArn = fmt.Sprint(app.Node().TryGetContext(jsii.String("CertificateArn")))
 
 	// If unspecified, this stack will be "environment-agnostic".
 	// Account/Region-dependent features and context lookups will not work, but a

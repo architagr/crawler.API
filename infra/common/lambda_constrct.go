@@ -22,9 +22,10 @@ type LambdaConstructProps struct {
 }
 
 func BuildLambda(props *LambdaConstructProps) lambda.IFunction {
-	functionId := fmt.Sprintf("%s-%s", props.StackNamePrefix, props.Id)
-	functionName := fmt.Sprintf("%s-%s", props.StackNamePrefix, props.Name)
+	functionId := props.StackNamePrefix.PrependStackName(props.Id)
+	functionName := props.StackNamePrefix.PrependStackName(props.Name)
 	functionCodePath := jsii.String(fmt.Sprintf("./../%s/main.zip", props.Service))
+	props.Env["GIN_MODE"] = jsii.String("release")
 
 	return lambda.NewFunction(props.Stack, &functionId, &lambda.FunctionProps{
 		Environment:  &props.Env,

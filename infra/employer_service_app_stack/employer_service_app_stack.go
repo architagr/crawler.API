@@ -1,4 +1,4 @@
-package userserviceappstack
+package employerserviceappstack
 
 import (
 	"infra/common"
@@ -12,12 +12,12 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-type UserAPILambdaStackProps struct {
+type EmployerAPILambdaStackProps struct {
 	config.CommonProps
 	UserPoolArn string
 }
 
-func NewUserAPILambdaStack(scope constructs.Construct, id string, props *UserAPILambdaStackProps) (awscdk.Stack, apigateway.LambdaRestApi) {
+func NewEmployerAPILambdaStack(scope constructs.Construct, id string, props *EmployerAPILambdaStackProps) (awscdk.Stack, apigateway.LambdaRestApi) {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
@@ -28,7 +28,7 @@ func NewUserAPILambdaStack(scope constructs.Construct, id string, props *UserAPI
 	return stack, loginRestApi
 }
 
-func buildCognitoAuthorizer(stack awscdk.Stack, props *UserAPILambdaStackProps) apigateway.IAuthorizer {
+func buildCognitoAuthorizer(stack awscdk.Stack, props *EmployerAPILambdaStackProps) apigateway.IAuthorizer {
 	userPool := awscognito.UserPool_FromUserPoolArn(stack, jsii.String(props.StackNamePrefix.PrependStackName("import-userpool-userapi")), &props.UserPoolArn)
 
 	return apigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String(props.StackNamePrefix.PrependStackName("cognito-authorizer")), &apigateway.CognitoUserPoolsAuthorizerProps{
@@ -40,51 +40,61 @@ func buildCognitoAuthorizer(stack awscdk.Stack, props *UserAPILambdaStackProps) 
 	})
 
 }
-func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *UserAPILambdaStackProps) apigateway.LambdaRestApi {
+func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *EmployerAPILambdaStackProps) apigateway.LambdaRestApi {
 	avatarBucket := BuildAvatarBucket(stack, &AvatarBucketStackProps{
 		CommonProps: props.CommonProps,
 	})
+	collectionNames := props.EmployerAPIDB.GetCollectionName()
 
 	authorizer := buildCognitoAuthorizer(stack, props)
 	env := make(map[string]*string)
-	env["DbConnectionString"] = props.UserAPIDB.GetConnectionString()
-	env["DatabaseName"] = props.UserAPIDB.GetDbName()
-	env["UserCollectionName"] = jsii.String(props.UserAPIDB.GetCollectionName())
+	env["DbConnectionString"] = props.EmployerAPIDB.GetConnectionString()
+	env["DatabaseName"] = props.EmployerAPIDB.GetDbName()
+	env["JobCollectionName"] = jsii.String(collectionNames.GetJobCollectionName())
+	env["CompanyCollectionName"] = jsii.String(collectionNames.GetCompanyCollectionName())
+
 	env["AvatarImageBucketName"] = avatarBucket.BucketName()
 
 	userFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
-		Id:          "user-lambda",
-		Handler:     "UserAPI",
-		Service:     "UserAPI",
-		Name:        "user-lambda-fn",
-		Description: "This function helps in all API related to user",
+		Id:          "employer-lambda",
+		Handler:     "EmployerAPI",
+		Service:     "EmployerAPI",
+		Name:        "employer-lambda-fn",
+		Description: "This function helps in all API related to employer",
 		Env:         env,
 		Stack:       stack,
 	})
-	avatarBucket.GrantReadWrite(userFunction, nil)
 
 	restApiProps := common.RestApiProps{
 		CommonProps: props.CommonProps,
 		Stack:       stack,
-		Id:          "UserApi",
+		Id:          "EmployerApi",
 		Handler:     userFunction,
-		Name:        "UserRestApi",
+		Name:        "EmployerRestApi",
 	}
 
-	userApi := common.BuildRestApi(&restApiProps)
+	employerApi := common.BuildRestApi(&restApiProps)
 
 	integration := common.BuildIntegration(&restApiProps)
 
-	baseApi := userApi.Root()
+	baseApi := employerApi.Root()
 
 	common.AddResource("healthCheck", baseApi, []string{common.GET_METHOD}, integration, nil)
-	profile := common.AddResource("profile", baseApi, []string{common.POST_METHOD}, integration, authorizer)
+
+	jobsAPI := common.AddResource("job", baseApi, []string{}, integration, authorizer)
+
+	common.AddResource("save", jobsAPI, []string{common.POST_METHOD}, integration, authorizer)
+	common.AddResource("get", jobsAPI, []string{common.POST_METHOD}, integration, authorizer)
+
+	companyAPI := common.AddResource("company", baseApi, []string{}, integration, authorizer)
+
+	common.AddResource("save", companyAPI, []string{common.POST_METHOD}, integration, authorizer)
+	common.AddResource("get", companyAPI, []string{common.POST_METHOD}, integration, authorizer)
 
 	common.AddResource("{id}",
-		common.AddResource("image", profile, []string{}, integration, authorizer),
+		common.AddResource("image", companyAPI, []string{}, integration, authorizer),
 		[]string{common.PUT_METHOD}, integration, authorizer)
-	common.AddResource("{username}", profile, []string{common.GET_METHOD}, integration, authorizer)
 
-	return userApi
+	return employerApi
 }

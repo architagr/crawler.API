@@ -1,7 +1,6 @@
 package distributionstack
 
 import (
-	"fmt"
 	"infra/config"
 
 	apigateway "github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
@@ -17,9 +16,10 @@ import (
 
 type DistributionStackambdaStackProps struct {
 	config.CommonProps
-	LoginRestApi apigateway.LambdaRestApi
-	JobsRestApi  apigateway.LambdaRestApi
-	UserRestApi  apigateway.LambdaRestApi
+	LoginRestApi    apigateway.LambdaRestApi
+	JobsRestApi     apigateway.LambdaRestApi
+	UserRestApi     apigateway.LambdaRestApi
+	EmployerRestApi apigateway.LambdaRestApi
 }
 
 func NewDistributionStackLambdaStack(scope constructs.Construct, id string, props *DistributionStackambdaStackProps) awscdk.Stack {
@@ -29,9 +29,9 @@ func NewDistributionStackLambdaStack(scope constructs.Construct, id string, prop
 	}
 
 	stack := awscdk.NewStack(scope, &id, &sprops)
-	certificate := acm.Certificate_FromCertificateArn(stack, jsii.String(fmt.Sprintf("%s-ApiCertificate", props.StackNamePrefix)), jsii.String(props.CertificateArn))
-	hostedZone := GetHostedZone(stack, jsii.String(fmt.Sprintf("%s-ApiHostedZone", props.StackNamePrefix)), props)
-	domain := apigateway.NewDomainName(stack, jsii.String(fmt.Sprintf("%s-APiDomain", props.StackNamePrefix)), &apigateway.DomainNameProps{
+	certificate := acm.Certificate_FromCertificateArn(stack, jsii.String(props.StackNamePrefix.PrependStackName("ApiCertificate")), jsii.String(props.CertificateArn))
+	hostedZone := GetHostedZone(stack, jsii.String(props.StackNamePrefix.PrependStackName("ApiHostedZone")), props)
+	domain := apigateway.NewDomainName(stack, jsii.String(props.StackNamePrefix.PrependStackName("APiDomain")), &apigateway.DomainNameProps{
 		DomainName:     jsii.String(props.ApiBasePath),
 		SecurityPolicy: apigateway.SecurityPolicy_TLS_1_2,
 		EndpointType:   apigateway.EndpointType_EDGE,
@@ -53,7 +53,12 @@ func NewDistributionStackLambdaStack(scope constructs.Construct, id string, prop
 		AttachToStage: jsii.Bool(true),
 	})
 
-	route53.NewARecord(stack, jsii.String(fmt.Sprintf("%s-APIArecord", props.StackNamePrefix)), &route53.ARecordProps{
+	domain.AddBasePathMapping(props.EmployerRestApi, &apigateway.BasePathMappingOptions{
+		BasePath:      jsii.String("employer"),
+		AttachToStage: jsii.Bool(true),
+	})
+
+	route53.NewARecord(stack, jsii.String(props.StackNamePrefix.PrependStackName("APIArecord")), &route53.ARecordProps{
 		RecordName: jsii.String(props.ApiBasePath),
 		Zone:       hostedZone,
 		Target:     route53.RecordTarget_FromAlias(route53targets.NewApiGatewayDomain(domain)),

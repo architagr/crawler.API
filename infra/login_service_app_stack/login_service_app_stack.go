@@ -35,10 +35,9 @@ func buildLambda(stack awscdk.Stack, props *LoginAPILambdaStackProps, userPool a
 	userPoolClient awscognito.IUserPoolClient) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.LoginAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.LoginAPIDB.GetDbName())
+	env["DbConnectionString"] = props.LoginAPIDB.GetConnectionString()
+	env["DatabaseName"] = props.LoginAPIDB.GetDbName()
 	env["LoginCollectionName"] = jsii.String(props.LoginAPIDB.GetCollectionName())
-	env["GIN_MODE"] = jsii.String("release")
 	env["UserPoolId"] = userPool.UserPoolId()
 	env["ClientId"] = userPoolClient.UserPoolClientId()
 

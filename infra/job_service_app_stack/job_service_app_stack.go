@@ -27,10 +27,9 @@ func NewJobAPILambdaStack(scope constructs.Construct, id string, props *JobAPILa
 func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILambdaStackProps) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.JobAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.JobAPIDB.GetDbName())
+	env["DbConnectionString"] = props.JobAPIDB.GetConnectionString()
+	env["DatabaseName"] = props.JobAPIDB.GetDbName()
 	env["CollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
-	env["GIN_MODE"] = jsii.String("release")
 
 	jobFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
@@ -57,6 +56,10 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration, nil)
 	common.AddResource("{jobId}",
 		common.AddResource("getJobDetail", jobApi.Root(), []string{}, integration, nil),
+		[]string{common.GET_METHOD}, integration, nil)
+
+	common.AddResource("{keywords}",
+		common.AddResource("courses", jobApi.Root(), []string{}, integration, nil),
 		[]string{common.GET_METHOD}, integration, nil)
 
 	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration, nil)

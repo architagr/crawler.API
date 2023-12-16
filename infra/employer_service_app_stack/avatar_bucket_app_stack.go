@@ -1,4 +1,4 @@
-package userserviceappstack
+package employerserviceappstack
 
 import (
 	"infra/config"
@@ -13,13 +13,11 @@ type AvatarBucketStackProps struct {
 }
 
 func BuildAvatarBucket(stack awscdk.Stack, props *AvatarBucketStackProps) awss3.IBucket {
-
-	avatarBucketName := props.StackNamePrefix.PrependStackName("avatar-bucket")
+	avatarBucketName := props.StackNamePrefix.PrependStackName("employer-bucket")
 	return awss3.NewBucket(stack, &avatarBucketName, &awss3.BucketProps{
 		BucketName:    &avatarBucketName,
 		AccessControl: awss3.BucketAccessControl_BUCKET_OWNER_FULL_CONTROL,
 		Versioned:     jsii.Bool(true),
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-
 }

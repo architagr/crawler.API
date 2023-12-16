@@ -2,6 +2,10 @@ accountId := $(shell aws sts get-caller-identity --query Account --output text -
 region := $(AWS_REGION)
 project := crawlerapi
 env := $(ENV)
+dbConnectionString := $(DbConnectionString)
+databaseName := $(DatabaseName)
+hostedZoneId := $(HostedZoneId)
+certificateArn := $(CertificateArn)
 ifndef region
 	region = ap-southeast-1
 endif
@@ -14,12 +18,14 @@ build:
 	make -C ../JobAPI lambda-build
 	make -C ../LoginAPI lambda-build
 	make -C ../UserAPI lambda-build
+	make -C ../EmployerAPI lambda-build
 
 clear:
 	make -C ../JobAPI clear
 	make -C ../LoginAPI clear
 	make -C ../UserAPI clear
-	
+	make -C ../EmployerAPI clear
+
 bootstrap:
 	cdk bootstrap
 
@@ -31,7 +37,11 @@ deploy:
 	--context ACCOUNT_ID=$(accountId) \
 	--context REGION=$(region) \
 	--context PROJECT=$(project) \
-	--context ENV=$(env)
+	--context ENV=$(env) \
+	--context DbConnectionString=$(dbConnectionString) \
+	--context DatabaseName=$(databaseName) \
+	--context HostedZoneId=$(hostedZoneId) \
+	--context CertificateArn=$(certificateArn)
 	make clear
 
 destroy:
