@@ -15,9 +15,9 @@
             ], 
             "showLog": true,
             "env": {
-                "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-                "DatabaseName":"webscrapper",
-                "LoginCollectionName":"authDetails",
+                "LoginAPIDbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
+                "LoginAPIDatabaseName":"webscrapper",
+                "LoginCollectionName":"dev-authDetails",
                 "UserPoolId":"ap-southeast-1_nzMRoSjhp",
                 "ClientId": "2mhbsi7ha643g4mu3u93iulsfg"
             }

@@ -13,9 +13,9 @@
           "args": [], 
           "showLog": true,
           "env": {
-           "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-            "DatabaseName":"webscrapper",
-            "CollectionName":"jobDetails",
+            "JobAPIDbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
+            "JobAPIDatabaseName":"webscrapper",
+            "JobCollectionName":"dev-employerJobDetails",
           },
     }
     ]

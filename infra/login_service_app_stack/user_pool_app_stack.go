@@ -1,7 +1,6 @@
 package loginserviceappstack
 
 import (
-	"fmt"
 	"infra/config"
 
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
@@ -16,8 +15,8 @@ type UserPoolLambdaStackProps struct {
 func BuildUserPool(stack awscdk.Stack, props *UserPoolLambdaStackProps) (userPool awscognito.IUserPool,
 	userPoolClient awscognito.IUserPoolClient) {
 
-	userPoolName := fmt.Sprintf("%s-userpool", props.StackNamePrefix)
-	userClientName := fmt.Sprintf("%s-userpoolclient", props.StackNamePrefix)
+	userPoolName := props.StackNamePrefix.PrependStackName("userpool")
+	userClientName := props.StackNamePrefix.PrependStackName("userpoolclient")
 
 	userPool = awscognito.NewUserPool(stack, &userPoolName, &awscognito.UserPoolProps{
 		SelfSignUpEnabled: jsii.Bool(true),

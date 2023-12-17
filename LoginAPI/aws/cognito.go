@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"LoginAPI/config"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
@@ -9,12 +11,12 @@ import (
 
 var svc cognitoInterface.CognitoIdentityProviderAPI = nil
 
-func GetCognitoService() cognitoInterface.CognitoIdentityProviderAPI {
+func GetCognitoService(config config.IConfig) cognitoInterface.CognitoIdentityProviderAPI {
 	if svc == nil {
 		sess := session.Must(session.NewSessionWithOptions(session.Options{
 			SharedConfigState: session.SharedConfigEnable,
 			Config: aws.Config{
-				Region: aws.String("ap-southeast-1"),
+				Region: aws.String(config.GetAwsRegion()),
 			},
 		}))
 		svc = cognitoidentityprovider.New(sess)

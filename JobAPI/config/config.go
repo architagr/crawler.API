@@ -8,6 +8,7 @@ type IConfig interface {
 	GetDatabaseConnectionString() string
 	GetDatabaseName() string
 	GetCollectionName() string
+	GetAwsRegion() string
 	IsLambda() bool
 }
 type Config struct {
@@ -15,23 +16,26 @@ type Config struct {
 	databaseName             string
 	collectionName           string
 	isLambda                 bool
+	awsRegion                string
 }
 
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
-	collectionNameKey           = "CollectionName"
+	databaseConnectionStringKey = "JobAPIDbConnectionString"
+	databaseNameKey             = "JobAPIDatabaseName"
+	collectionNameKey           = "JobCollectionName"
+	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
 func InitConfig() {
-	_, ok := os.LookupEnv("LAMBDA_TASK_ROOT")
+	_, ok := os.LookupEnv(isLambdaEnvKey)
 	env = &Config{
 		databaseConnectionString: os.Getenv(databaseConnectionStringKey),
 		databaseName:             os.Getenv(databaseNameKey),
 		collectionName:           os.Getenv(collectionNameKey),
+		awsRegion:                os.Getenv(awsRegionKey),
 		isLambda:                 ok,
 	}
 }
@@ -57,4 +61,7 @@ func (e *Config) GetCollectionName() string {
 
 func (e *Config) IsLambda() bool {
 	return e.isLambda
+}
+func (e *Config) GetAwsRegion() string {
+	return e.awsRegion
 }

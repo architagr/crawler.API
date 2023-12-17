@@ -1,7 +1,6 @@
 package userserviceappstack
 
 import (
-	"fmt"
 	"infra/common"
 	"infra/config"
 
@@ -30,14 +29,14 @@ func NewUserAPILambdaStack(scope constructs.Construct, id string, props *UserAPI
 }
 
 func buildCognitoAuthorizer(stack awscdk.Stack, props *UserAPILambdaStackProps) apigateway.IAuthorizer {
-	userPool := awscognito.UserPool_FromUserPoolArn(stack, jsii.String(fmt.Sprintf("%s-import-userpool-userapi", props.StackNamePrefix)), &props.UserPoolArn)
+	userPool := awscognito.UserPool_FromUserPoolArn(stack, jsii.String(props.StackNamePrefix.PrependStackName("import-userpool-userapi")), &props.UserPoolArn)
 
-	return apigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String(fmt.Sprintf("%s-cognito-authorizer", props.StackNamePrefix)), &apigateway.CognitoUserPoolsAuthorizerProps{
+	return apigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String(props.StackNamePrefix.PrependStackName("cognito-authorizer")), &apigateway.CognitoUserPoolsAuthorizerProps{
 		CognitoUserPools: &[]awscognito.IUserPool{
 			userPool,
 		},
 		IdentitySource: jsii.String("method.request.header.Authorization"),
-		AuthorizerName: jsii.String(fmt.Sprintf("%s-cognito-authorizer-userapi", props.StackNamePrefix)),
+		AuthorizerName: jsii.String(props.StackNamePrefix.PrependStackName("cognito-authorizer-userapi")),
 	})
 
 }
@@ -48,16 +47,15 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *UserAPIL
 
 	authorizer := buildCognitoAuthorizer(stack, props)
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.UserAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.UserAPIDB.GetDbName())
+	env["UserAPIDbConnectionString"] = props.UserAPIDB.GetConnectionString()
+	env["UserAPIDatabaseName"] = props.UserAPIDB.GetDbName()
 	env["UserCollectionName"] = jsii.String(props.UserAPIDB.GetCollectionName())
-	env["GIN_MODE"] = jsii.String("release")
-	env["AvatarImageBucketName"] = avatarBucket.BucketName()
+	env["UserImageBucketName"] = avatarBucket.BucketName()
 
 	userFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "user-lambda",
-		Handler:     "UserAPI",
+		Handler:     "UserAPI", // TODO: get this from makefile
 		Service:     "UserAPI",
 		Name:        "user-lambda-fn",
 		Description: "This function helps in all API related to user",

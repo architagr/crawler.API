@@ -61,7 +61,7 @@ func InitGinRouters(employerController controller.IEmployerController, companyCo
 
 func createEmployerRoutes(group *gin.RouterGroup, employerController controller.IEmployerController, logObj logger.ILogger) {
 	jobGroup := group.Group("job")
-
+	jobGroup.Use(ginMiddleware.GetTokenInfo())
 	jobGroup.POST("/save", func(ginContext *gin.Context) {
 		var jobDetail models.JobDetail
 		if err := ginContext.ShouldBind(&jobDetail); err != nil {
@@ -108,7 +108,7 @@ func createEmployerRoutes(group *gin.RouterGroup, employerController controller.
 
 func createCompanyRoutes(group *gin.RouterGroup, companyController controller.ICompanyController, logObj logger.ILogger) {
 	companyGroup := group.Group("company")
-
+	companyGroup.Use(ginMiddleware.GetTokenInfo())
 	companyGroup.POST("/save", func(ginContext *gin.Context) {
 		var companyDetail models.Company
 		if err := ginContext.ShouldBind(&companyDetail); err != nil {
@@ -204,7 +204,6 @@ func getInitialRouteGroup(ginEngine *gin.Engine) *gin.RouterGroup {
 func registerInitialCommonMiddleware(ginEngine *gin.Engine, logObj logger.ILogger) {
 	ginEngine.Use(ginMiddleware.GetErrorHandler(logObj))
 	ginEngine.Use(ginMiddleware.GetCorsMiddelware())
-	ginEngine.Use(ginMiddleware.GetTokenInfo())
 }
 func getMiddlewares() middlewarePkg.IMiddleware[gin.HandlerFunc] {
 	return middlewarePkg.InitGinMiddelware()

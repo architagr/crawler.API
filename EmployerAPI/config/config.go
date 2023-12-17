@@ -7,31 +7,31 @@ var ConfigContainerKey = "config"
 type IConfig interface {
 	GetDatabaseConnectionString() string
 	GetDatabaseName() string
-	GetEmployerCollectionName() string
 	GetJobCollectionName() string
 	GetCompanyCollectionName() string
 	GetAvatarImageBucketName() string
+	GetAwsRegion() string
 	IsLambda() bool
 }
 type Config struct {
 	databaseConnectionString string
 	databaseName             string
-	employerCollectionName   string
 	jobCollectionName        string
 	companyCollectionName    string
 	isLambda                 bool
 	avatarImageBucketName    string
+	awsRegion                string
 }
 
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
-	employerCollectionKey       = "EmployerCollection"
-	jobCollectionKey            = "JobCollection"
-	companyCollectionKey        = "CompanyCollection"
-	avatarImageBucketNameKey    = "AvatarImageBucketName"
+	databaseConnectionStringKey = "EmployerAPIDbConnectionString"
+	databaseNameKey             = "EmployerAPIDatabaseName"
+	jobCollectionKey            = "JobCollectionName"
+	companyCollectionKey        = "CompanyCollectionName"
+	avatarImageBucketNameKey    = "EmployerImageBucketName"
+	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
@@ -41,10 +41,10 @@ func InitConfig() {
 	env = &Config{
 		databaseConnectionString: os.Getenv(databaseConnectionStringKey),
 		databaseName:             os.Getenv(databaseNameKey),
-		employerCollectionName:   os.Getenv(employerCollectionKey),
 		jobCollectionName:        os.Getenv(jobCollectionKey),
 		companyCollectionName:    os.Getenv(companyCollectionKey),
 		avatarImageBucketName:    os.Getenv(avatarImageBucketNameKey),
+		awsRegion:                os.Getenv(awsRegionKey),
 		isLambda:                 ok,
 	}
 }
@@ -64,10 +64,6 @@ func (e *Config) GetDatabaseName() string {
 	return e.databaseName
 }
 
-func (e *Config) GetEmployerCollectionName() string {
-	return e.employerCollectionName
-}
-
 func (e *Config) GetJobCollectionName() string {
 	return e.jobCollectionName
 }
@@ -82,4 +78,7 @@ func (e *Config) IsLambda() bool {
 
 func (e *Config) GetAvatarImageBucketName() string {
 	return e.avatarImageBucketName
+}
+func (e *Config) GetAwsRegion() string {
+	return e.awsRegion
 }

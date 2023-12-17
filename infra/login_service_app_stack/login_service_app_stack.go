@@ -35,17 +35,16 @@ func buildLambda(stack awscdk.Stack, props *LoginAPILambdaStackProps, userPool a
 	userPoolClient awscognito.IUserPoolClient) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.LoginAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.LoginAPIDB.GetDbName())
+	env["LoginAPIDbConnectionString"] = props.LoginAPIDB.GetConnectionString()
+	env["LoginAPIDatabaseName"] = props.LoginAPIDB.GetDbName()
 	env["LoginCollectionName"] = jsii.String(props.LoginAPIDB.GetCollectionName())
-	env["GIN_MODE"] = jsii.String("release")
 	env["UserPoolId"] = userPool.UserPoolId()
 	env["ClientId"] = userPoolClient.UserPoolClientId()
 
 	loginFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "login-lambda",
-		Handler:     "LoginAPI",
+		Handler:     "LoginAPI", // TODO: get this from makefile
 		Service:     "LoginAPI",
 		Name:        "login-lambda-fn",
 		Description: "This function helps in all API related to login",

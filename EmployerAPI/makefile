@@ -1,4 +1,4 @@
-ServiceName := JobAPI
+ServiceName := EmployerAPI
 
 lambda-build:
 	make clear

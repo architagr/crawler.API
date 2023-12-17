@@ -9,6 +9,7 @@ type IConfig interface {
 	GetDatabaseName() string
 	GetCollectionName() string
 	GetAvatarImageBucketName() string
+	GetAwsRegion() string
 	IsLambda() bool
 }
 type Config struct {
@@ -17,15 +18,17 @@ type Config struct {
 	collectionName           string
 	isLambda                 bool
 	avatarImageBucketName    string
+	awsRegion                string
 }
 
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
+	databaseConnectionStringKey = "UserAPIDbConnectionString"
+	databaseNameKey             = "UserAPIDatabaseName"
 	collectionNameKey           = "UserCollectionName"
-	avatarImageBucketNameKey    = "AvatarImageBucketName"
+	avatarImageBucketNameKey    = "UserImageBucketName"
+	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
@@ -37,6 +40,7 @@ func InitConfig() {
 		databaseName:             os.Getenv(databaseNameKey),
 		collectionName:           os.Getenv(collectionNameKey),
 		avatarImageBucketName:    os.Getenv(avatarImageBucketNameKey),
+		awsRegion:                os.Getenv(awsRegionKey),
 		isLambda:                 ok,
 	}
 }
@@ -66,4 +70,7 @@ func (e *Config) IsLambda() bool {
 
 func (e *Config) GetAvatarImageBucketName() string {
 	return e.avatarImageBucketName
+}
+func (e *Config) GetAwsRegion() string {
+	return e.awsRegion
 }

@@ -27,15 +27,14 @@ func NewJobAPILambdaStack(scope constructs.Construct, id string, props *JobAPILa
 func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILambdaStackProps) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = jsii.String(props.JobAPIDB.GetConnectionString())
-	env["DatabaseName"] = jsii.String(props.JobAPIDB.GetDbName())
-	env["CollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
-	env["GIN_MODE"] = jsii.String("release")
+	env["JobAPIDbConnectionString"] = props.JobAPIDB.GetConnectionString()
+	env["JobAPIDatabaseName"] = props.JobAPIDB.GetDbName()
+	env["JobCollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
 
 	jobFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "job-lambda",
-		Handler:     "JobAPI",
+		Handler:     "JobAPI", // TODO: get this from makefile
 		Service:     "JobAPI",
 		Name:        "job-lambda-fn",
 		Description: "This function helps in all API related to jobs",
@@ -57,6 +56,10 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILa
 	common.AddResource("getJobs", jobApi.Root(), []string{common.POST_METHOD}, integration, nil)
 	common.AddResource("{jobId}",
 		common.AddResource("getJobDetail", jobApi.Root(), []string{}, integration, nil),
+		[]string{common.GET_METHOD}, integration, nil)
+
+	common.AddResource("{keywords}",
+		common.AddResource("courses", jobApi.Root(), []string{}, integration, nil),
 		[]string{common.GET_METHOD}, integration, nil)
 
 	common.AddResource("healthCheck", jobApi.Root(), []string{common.GET_METHOD}, integration, nil)

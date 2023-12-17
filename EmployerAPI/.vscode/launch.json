@@ -15,11 +15,11 @@
             ], 
             "showLog": true,
             "env": {
-                "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-                "DatabaseName":"webscrapper",
-                "JobCollection":"EmployerJobDetails",
-                "CompanyCollection":"companyDetails",
-                "AvatarImageBucketName": "jobcrawler.portalimages"
+                "EmployerAPIDbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
+                "EmployerAPIDatabaseName":"webscrapper",
+                "JobCollectionName":"dev-employerJobDetails",
+                "CompanyCollectionName":"arc-companyDetails",
+                "EmployerImageBucketName": "dev-crawlerapi-employer-bucket"
             }
         }
     ]
