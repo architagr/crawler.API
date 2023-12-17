@@ -30,7 +30,7 @@ const (
 )
 
 func InitConfig() {
-	_, ok := os.LookupEnv("LAMBDA_TASK_ROOT")
+	_, ok := os.LookupEnv(isLambdaEnvKey)
 	env = &Config{
 		databaseConnectionString: os.Getenv(databaseConnectionStringKey),
 		databaseName:             os.Getenv(databaseNameKey),
