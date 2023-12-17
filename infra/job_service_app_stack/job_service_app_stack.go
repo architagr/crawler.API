@@ -27,14 +27,14 @@ func NewJobAPILambdaStack(scope constructs.Construct, id string, props *JobAPILa
 func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *JobAPILambdaStackProps) apigateway.LambdaRestApi {
 
 	env := make(map[string]*string)
-	env["DbConnectionString"] = props.JobAPIDB.GetConnectionString()
-	env["DatabaseName"] = props.JobAPIDB.GetDbName()
-	env["CollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
+	env["JobAPIDbConnectionString"] = props.JobAPIDB.GetConnectionString()
+	env["JobAPIDatabaseName"] = props.JobAPIDB.GetDbName()
+	env["JobCollectionName"] = jsii.String(props.JobAPIDB.GetCollectionName())
 
 	jobFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "job-lambda",
-		Handler:     "JobAPI",
+		Handler:     "JobAPI", // TODO: get this from makefile
 		Service:     "JobAPI",
 		Name:        "job-lambda-fn",
 		Description: "This function helps in all API related to jobs",

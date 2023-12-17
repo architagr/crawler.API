@@ -48,17 +48,16 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *Employer
 
 	authorizer := buildCognitoAuthorizer(stack, props)
 	env := make(map[string]*string)
-	env["DbConnectionString"] = props.EmployerAPIDB.GetConnectionString()
-	env["DatabaseName"] = props.EmployerAPIDB.GetDbName()
+	env["EmployerAPIDbConnectionString"] = props.EmployerAPIDB.GetConnectionString()
+	env["EmployerAPIDatabaseName"] = props.EmployerAPIDB.GetDbName()
 	env["JobCollectionName"] = jsii.String(collectionNames.GetJobCollectionName())
 	env["CompanyCollectionName"] = jsii.String(collectionNames.GetCompanyCollectionName())
-
-	env["AvatarImageBucketName"] = avatarBucket.BucketName()
+	env["EmployerImageBucketName"] = avatarBucket.BucketName()
 
 	userFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "employer-lambda",
-		Handler:     "EmployerAPI",
+		Handler:     "EmployerAPI", // TODO: get this from makefile
 		Service:     "EmployerAPI",
 		Name:        "employer-lambda-fn",
 		Description: "This function helps in all API related to employer",

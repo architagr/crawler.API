@@ -46,3 +46,7 @@ deploy:
 
 destroy:
 	cdk destroy --all --require-approval never
+
+set-env:
+	./get-env.sh
+	go run get-env.go

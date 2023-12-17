@@ -22,9 +22,9 @@ type Config struct {
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
-	collectionNameKey           = "CollectionName"
+	databaseConnectionStringKey = "JobAPIDbConnectionString"
+	databaseNameKey             = "JobAPIDatabaseName"
+	collectionNameKey           = "JobCollectionName"
 	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )

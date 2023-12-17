@@ -15,10 +15,10 @@
             ], 
             "showLog": true,
             "env": {
-                "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
-                "DatabaseName":"webscrapper",
-                "UserCollectionName":"userProfile",
-                "AvatarImageBucketName": "jobcrawler.images"
+                "UserAPIDbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
+                "UserAPIDatabaseName":"webscrapper",
+                "UserCollectionName":"dev-userProfile",
+                "UserImageBucketName": "dev-crawlerapi-avatar-bucket"
             }
         }
     ]

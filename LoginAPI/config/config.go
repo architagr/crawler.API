@@ -26,8 +26,8 @@ type Config struct {
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
+	databaseConnectionStringKey = "LoginAPIDbConnectionString"
+	databaseNameKey             = "LoginAPIDatabaseName"
 	collectionNameKey           = "LoginCollectionName"
 	userPoolIdKey               = "UserPoolId"
 	clientid                    = "ClientId"

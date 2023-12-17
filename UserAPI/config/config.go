@@ -24,10 +24,10 @@ type Config struct {
 var env IConfig
 
 const (
-	databaseConnectionStringKey = "DbConnectionString"
-	databaseNameKey             = "DatabaseName"
+	databaseConnectionStringKey = "UserAPIDbConnectionString"
+	databaseNameKey             = "UserAPIDatabaseName"
 	collectionNameKey           = "UserCollectionName"
-	avatarImageBucketNameKey    = "AvatarImageBucketName"
+	avatarImageBucketNameKey    = "UserImageBucketName"
 	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )

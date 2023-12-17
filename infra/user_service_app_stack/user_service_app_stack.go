@@ -47,15 +47,15 @@ func buildLambda(stack awscdk.Stack, scope constructs.Construct, props *UserAPIL
 
 	authorizer := buildCognitoAuthorizer(stack, props)
 	env := make(map[string]*string)
-	env["DbConnectionString"] = props.UserAPIDB.GetConnectionString()
-	env["DatabaseName"] = props.UserAPIDB.GetDbName()
+	env["UserAPIDbConnectionString"] = props.UserAPIDB.GetConnectionString()
+	env["UserAPIDatabaseName"] = props.UserAPIDB.GetDbName()
 	env["UserCollectionName"] = jsii.String(props.UserAPIDB.GetCollectionName())
-	env["AvatarImageBucketName"] = avatarBucket.BucketName()
+	env["UserImageBucketName"] = avatarBucket.BucketName()
 
 	userFunction := common.BuildLambda(&common.LambdaConstructProps{
 		CommonProps: props.CommonProps,
 		Id:          "user-lambda",
-		Handler:     "UserAPI",
+		Handler:     "UserAPI", // TODO: get this from makefile
 		Service:     "UserAPI",
 		Name:        "user-lambda-fn",
 		Description: "This function helps in all API related to user",
