@@ -1,8 +1,10 @@
+ServiceName := LoginAPI
+
 lambda-build:
 	make clear
-	GOOS=linux GOARCH=amd64 go build -o LoginAPI main.go 
-	zip main.zip LoginAPI
-	rm -f LoginAPI
+	GOOS=linux GOARCH=amd64 go build -o $(ServiceName) main.go 
+	zip main.zip $(ServiceName)
+	rm -f $(ServiceName)
 
 clear:
-	rm -f LoginAPI main.zip
+	rm -f $(ServiceName) main.zip

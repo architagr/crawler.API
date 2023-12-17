@@ -10,6 +10,7 @@ type IConfig interface {
 	GetCollectionName() string
 	GetUserPoolId() string
 	GetClientId() string
+	GetAwsRegion() string
 	IsLambda() bool
 }
 type Config struct {
@@ -19,6 +20,7 @@ type Config struct {
 	userPoolId               string
 	clientId                 string
 	isLambda                 bool
+	awsRegion                string
 }
 
 var env IConfig
@@ -29,6 +31,7 @@ const (
 	collectionNameKey           = "LoginCollectionName"
 	userPoolIdKey               = "UserPoolId"
 	clientid                    = "ClientId"
+	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
@@ -41,6 +44,7 @@ func InitConfig() {
 		collectionName:           os.Getenv(collectionNameKey),
 		userPoolId:               os.Getenv(userPoolIdKey),
 		clientId:                 os.Getenv(clientid),
+		awsRegion:                os.Getenv(awsRegionKey),
 		isLambda:                 ok,
 	}
 }
@@ -73,4 +77,7 @@ func (e *Config) GetUserPoolId() string {
 }
 func (e *Config) GetClientId() string {
 	return e.clientId
+}
+func (e *Config) GetAwsRegion() string {
+	return e.awsRegion
 }

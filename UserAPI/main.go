@@ -37,7 +37,7 @@ func main() {
 
 }
 func initS3Session() {
-	s3Session = aws.GetS3Session()
+	s3Session = aws.GetS3Session(envVariables)
 }
 func initLogger() {
 	logObj = logger.InitConsoleLogger()

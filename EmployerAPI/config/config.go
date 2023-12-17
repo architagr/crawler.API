@@ -10,6 +10,7 @@ type IConfig interface {
 	GetJobCollectionName() string
 	GetCompanyCollectionName() string
 	GetAvatarImageBucketName() string
+	GetAwsRegion() string
 	IsLambda() bool
 }
 type Config struct {
@@ -19,6 +20,7 @@ type Config struct {
 	companyCollectionName    string
 	isLambda                 bool
 	avatarImageBucketName    string
+	awsRegion                string
 }
 
 var env IConfig
@@ -29,6 +31,7 @@ const (
 	jobCollectionKey            = "JobCollectionName"
 	companyCollectionKey        = "CompanyCollectionName"
 	avatarImageBucketNameKey    = "AvatarImageBucketName"
+	awsRegionKey                = "AWS_REGION"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
 
@@ -41,6 +44,7 @@ func InitConfig() {
 		jobCollectionName:        os.Getenv(jobCollectionKey),
 		companyCollectionName:    os.Getenv(companyCollectionKey),
 		avatarImageBucketName:    os.Getenv(avatarImageBucketNameKey),
+		awsRegion:                os.Getenv(awsRegionKey),
 		isLambda:                 ok,
 	}
 }
@@ -74,4 +78,7 @@ func (e *Config) IsLambda() bool {
 
 func (e *Config) GetAvatarImageBucketName() string {
 	return e.avatarImageBucketName
+}
+func (e *Config) GetAwsRegion() string {
+	return e.awsRegion
 }

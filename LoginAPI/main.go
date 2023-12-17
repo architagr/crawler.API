@@ -25,7 +25,7 @@ var cognito cognitoInterface.CognitoIdentityProviderAPI
 
 func main() {
 	flag.Parse()
-	cognito = aws.GetCognitoService()
+	cognito = aws.GetCognitoService(envVariables)
 	initLogger()
 	initConfig()
 	initRepository()

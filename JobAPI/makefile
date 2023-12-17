@@ -1,8 +1,10 @@
+ServiceName := JobAPI
+
 lambda-build:
 	make clear
-	GOOS=linux GOARCH=amd64 go build -o JobAPI main.go 
-	zip main.zip JobAPI
-	rm -f JobAPI
+	GOOS=linux GOARCH=amd64 go build -o $(ServiceName) main.go 
+	zip main.zip $(ServiceName)
+	rm -f $(ServiceName)
 
 clear:
-	rm -f JobAPI main.zip
+	rm -f $(ServiceName) main.zip

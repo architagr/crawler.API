@@ -34,14 +34,14 @@ deploy:
 	rm -rf cdk.out
 	clear
 	cdk deploy --all --require-approval never \
-	--context ACCOUNT_ID=$(accountId) \
-	--context REGION=$(region) \
-	--context PROJECT=$(project) \
-	--context ENV=$(env) \
-	--context DbConnectionString=$(dbConnectionString) \
-	--context DatabaseName=$(databaseName) \
-	--context HostedZoneId=$(hostedZoneId) \
-	--context CertificateArn=$(certificateArn)
+	--context ACCOUNT_ID="$(accountId)" \
+	--context REGION="$(region)" \
+	--context PROJECT="$(project)" \
+	--context ENV="$(env)" \
+	--context DbConnectionString="$(dbConnectionString)" \
+	--context DatabaseName="$(databaseName)" \
+	--context HostedZoneId="$(hostedZoneId)" \
+	--context CertificateArn="$(certificateArn)"
 	make clear
 
 destroy:
