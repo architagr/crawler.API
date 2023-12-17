@@ -17,8 +17,8 @@
             "env": {
                 "DbConnectionString":"mongodb+srv://webscrapper:WebScrapper123@cluster0.xzvihm7.mongodb.net/?retryWrites=true&w=majority",
                 "DatabaseName":"webscrapper",
-                "JobCollection":"EmployerJobDetails",
-                "CompanyCollection":"companyDetails",
+                "JobCollectionName":"EmployerJobDetails",
+                "CompanyCollectionName":"companyDetails",
                 "AvatarImageBucketName": "jobcrawler.portalimages"
             }
         }

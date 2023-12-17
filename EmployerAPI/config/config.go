@@ -7,7 +7,6 @@ var ConfigContainerKey = "config"
 type IConfig interface {
 	GetDatabaseConnectionString() string
 	GetDatabaseName() string
-	GetEmployerCollectionName() string
 	GetJobCollectionName() string
 	GetCompanyCollectionName() string
 	GetAvatarImageBucketName() string
@@ -16,7 +15,6 @@ type IConfig interface {
 type Config struct {
 	databaseConnectionString string
 	databaseName             string
-	employerCollectionName   string
 	jobCollectionName        string
 	companyCollectionName    string
 	isLambda                 bool
@@ -28,9 +26,8 @@ var env IConfig
 const (
 	databaseConnectionStringKey = "DbConnectionString"
 	databaseNameKey             = "DatabaseName"
-	employerCollectionKey       = "EmployerCollection"
-	jobCollectionKey            = "JobCollection"
-	companyCollectionKey        = "CompanyCollection"
+	jobCollectionKey            = "JobCollectionName"
+	companyCollectionKey        = "CompanyCollectionName"
 	avatarImageBucketNameKey    = "AvatarImageBucketName"
 	isLambdaEnvKey              = "LAMBDA_TASK_ROOT"
 )
@@ -41,7 +38,6 @@ func InitConfig() {
 	env = &Config{
 		databaseConnectionString: os.Getenv(databaseConnectionStringKey),
 		databaseName:             os.Getenv(databaseNameKey),
-		employerCollectionName:   os.Getenv(employerCollectionKey),
 		jobCollectionName:        os.Getenv(jobCollectionKey),
 		companyCollectionName:    os.Getenv(companyCollectionKey),
 		avatarImageBucketName:    os.Getenv(avatarImageBucketNameKey),
@@ -62,10 +58,6 @@ func (e *Config) GetDatabaseConnectionString() string {
 
 func (e *Config) GetDatabaseName() string {
 	return e.databaseName
-}
-
-func (e *Config) GetEmployerCollectionName() string {
-	return e.employerCollectionName
 }
 
 func (e *Config) GetJobCollectionName() string {
