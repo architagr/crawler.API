@@ -50,3 +50,10 @@ destroy:
 set-env:
 	./get-env.sh
 	go run get-env.go
+
+tidy:
+	make -C ../JobAPI tidy
+	make -C ../LoginAPI tidy
+	make -C ../UserAPI tidy
+	make -C ../EmployerAPI tidy
+	go mod tidy

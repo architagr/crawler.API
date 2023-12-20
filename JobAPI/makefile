@@ -8,3 +8,6 @@ lambda-build:
 
 clear:
 	rm -f $(ServiceName) main.zip
+
+tidy:
+	go mod tidy
